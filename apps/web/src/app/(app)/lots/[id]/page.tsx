@@ -5,18 +5,20 @@ import type { Id } from "@geoveda/backend/convex/_generated/dataModel";
 import { Authenticated, useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
 import {
-  ArrowRight,
+  ArrowLeft,
   Calendar,
   CheckCircle2,
   ClipboardCheck,
   Factory,
+  Leaf,
   Loader2,
   MapPin,
+  Package,
   Sprout,
   Store,
   Truck,
-  User,
 } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
@@ -32,7 +34,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -40,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
 const ROLE_STEP_PERMISSIONS: Record<string, string[]> = {
@@ -57,13 +59,22 @@ const ROLE_STEP_PERMISSIONS: Record<string, string[]> = {
   ],
 };
 
-const STEP_ICONS: Record<string, any> = {
+const STEP_ICONS: Record<string, typeof Sprout> = {
   harvest: Sprout,
   process: Factory,
   quality_check: ClipboardCheck,
   transport: Truck,
-  receive: ArrowRight,
+  receive: Package,
   retail: Store,
+};
+
+const STEP_COLORS: Record<string, string> = {
+  harvest: "text-green-600 bg-green-50 dark:bg-green-950/40",
+  process: "text-orange-600 bg-orange-50 dark:bg-orange-950/40",
+  quality_check: "text-blue-600 bg-blue-50 dark:bg-blue-950/40",
+  transport: "text-amber-600 bg-amber-50 dark:bg-amber-950/40",
+  receive: "text-purple-600 bg-purple-50 dark:bg-purple-950/40",
+  retail: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950/40",
 };
 
 const STEP_LABELS: Record<string, string> = {
@@ -75,24 +86,20 @@ const STEP_LABELS: Record<string, string> = {
   retail: "Ready for Retail",
 };
 
-export default function LotDetailPage() {
+const formatStepType = (type: string) =>
+  type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+function LotDetailContent() {
   const params = useParams();
   const lotId = params.id as Id<"lots">;
 
-  // Cast api to any to avoid type errors when codegen hasn't run fully
-  const safeApi = api as any;
-
-  const user = useQuery(safeApi.users.getCurrent);
-  const lot = useQuery(safeApi.lots.getById, { lotId });
-  const steps = useQuery(safeApi.steps.listByLot, { lotId });
-  const addStep = useMutation(safeApi.steps.add);
+  const user = useQuery(api.users.getCurrent);
+  const lot = useQuery(api.lots.getById, { lotId });
+  const steps = useQuery(api.steps.listByLot, { lotId });
+  const addStep = useMutation(api.steps.add);
 
   const [isAddingStep, setIsAddingStep] = useState(false);
-  const [newStep, setNewStep] = useState<{
-    type: string;
-    title: string;
-    description: string;
-  }>({
+  const [newStep, setNewStep] = useState({
     type: "",
     title: "",
     description: "",
@@ -104,14 +111,19 @@ export default function LotDetailPage() {
     try {
       await addStep({
         lotId,
-        type: newStep.type,
+        type: newStep.type as
+          | "harvest"
+          | "process"
+          | "quality_check"
+          | "transport"
+          | "receive"
+          | "retail",
         title: newStep.title,
-        description: newStep.description,
+        description: newStep.description || undefined,
       });
       toast.success("Step added successfully");
       setNewStep({ type: "", title: "", description: "" });
-    } catch (error) {
-      console.error("Failed to add step:", error);
+    } catch {
       toast.error("Failed to add step");
     } finally {
       setIsAddingStep(false);
@@ -121,195 +133,258 @@ export default function LotDetailPage() {
   if (!(lot && steps && user)) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   const allowedStepTypes = user.role
-    ? ROLE_STEP_PERMISSIONS[user.role] || []
+    ? (ROLE_STEP_PERMISSIONS[user.role] ?? [])
     : [];
 
+  const statusVariant =
+    lot.status === "complete" ? ("default" as const) : ("secondary" as const);
+
   return (
-    <div className="container mx-auto space-y-8 py-8">
-      <Authenticated>
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-2xl">{lot.productName}</CardTitle>
-                  <CardDescription className="mt-1 font-mono">
-                    {lot.lotNumber}
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant={lot.status === "complete" ? "default" : "secondary"}
-                >
-                  {lot.status.replace("_", " ").toUpperCase()}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Origin:</span>
-                  <span>{lot.origin}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Created:</span>
-                  <span>{format(lot.createdAt, "PPP")}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="space-y-6 p-6">
+      <Button
+        className="text-muted-foreground"
+        render={<Link href={"/lots" as never} />}
+        size="sm"
+        variant="ghost"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4" />
+        Back to Lots
+      </Button>
 
-          <Card className="flex flex-col items-center justify-center bg-white p-6">
-            <QRCodeSVG size={150} value={lot.lotNumber} />
-            <p className="mt-4 text-center text-muted-foreground text-xs">
-              Scan to verify authenticity
-            </p>
-          </Card>
-        </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-4">
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-xl">{lot.productName}</CardTitle>
+                <p className="font-mono text-muted-foreground text-sm">
+                  {lot.lotNumber}
+                </p>
+              </div>
+              <Badge variant={statusVariant}>
+                {lot.status.replace("_", " ").toUpperCase()}
+              </Badge>
+            </div>
+          </CardHeader>
+          <Separator />
+          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+            <div className="flex items-center gap-2 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Origin:</span>
+              <span className="font-medium">{lot.origin}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Created:</span>
+              <span className="font-medium">
+                {format(lot.createdAt, "MMM d, yyyy")}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Journey Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[500px] pr-4" data-testid="timeline">
-                <div className="relative ml-4 space-y-8 border-muted border-l pb-4">
-                  <div className="relative pl-8">
-                    <span className="absolute top-1 -left-[5px] flex h-2.5 w-2.5 rounded-full bg-primary ring-4 ring-background" />
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium text-muted-foreground text-sm">
-                        {format(lot.createdAt, "PP p")}
-                      </span>
-                      <h4 className="font-semibold">Lot Created</h4>
-                      <p className="text-muted-foreground text-sm">
-                        Initial registration at {lot.origin}
-                      </p>
-                    </div>
+        <Card className="flex flex-col items-center justify-center p-6">
+          <QRCodeSVG
+            bgColor="transparent"
+            fgColor="currentColor"
+            size={140}
+            value={lot.lotNumber}
+          />
+          <p className="mt-3 text-center text-muted-foreground text-xs">
+            Scan to verify authenticity
+          </p>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-lg">Journey Timeline</h2>
+              <p className="text-muted-foreground text-sm">
+                {steps.length} step{steps.length !== 1 ? "s" : ""} recorded
+              </p>
+            </div>
+          </div>
+
+          <Card>
+            <CardContent className="pt-6" data-testid="timeline">
+              <div className="relative ml-4 space-y-0 border-muted-foreground/20 border-l pl-8">
+                <div className="relative pb-8">
+                  <span className="absolute -left-12 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary ring-4 ring-background">
+                    <Leaf className="h-4 w-4" />
+                  </span>
+                  <div className="space-y-1">
+                    <time className="font-mono text-muted-foreground text-xs">
+                      {format(lot.createdAt, "MMM d, yyyy 'at' h:mm a")}
+                    </time>
+                    <h3 className="font-semibold">Lot Created</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Initial registration at {lot.origin}
+                    </p>
                   </div>
+                </div>
 
-                  {steps.map((step: any) => {
-                    const Icon = STEP_ICONS[step.type] || CheckCircle2;
+                {steps.length === 0 ? (
+                  <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-center">
+                    <Package className="h-6 w-6 text-muted-foreground" />
+                    <p className="text-muted-foreground text-sm">
+                      No steps recorded yet.
+                    </p>
+                  </div>
+                ) : (
+                  steps.map((step, index) => {
+                    const Icon = STEP_ICONS[step.type] ?? CheckCircle2;
+                    const colorClass =
+                      STEP_COLORS[step.type] ??
+                      "text-muted-foreground bg-muted";
+                    const isLast = index === steps.length - 1;
+
                     return (
-                      <div className="relative pl-8" key={step._id}>
-                        <span className="absolute top-1 -left-3 flex h-8 w-8 items-center justify-center rounded-full bg-muted ring-4 ring-background">
+                      <div
+                        className={`relative ${isLast ? "pb-0" : "pb-8"}`}
+                        key={step._id}
+                      >
+                        <span
+                          className={`absolute -left-12 flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-background ${colorClass}`}
+                        >
                           <Icon className="h-4 w-4" />
                         </span>
-                        <div className="flex flex-col gap-1">
-                          <span className="font-medium text-muted-foreground text-sm">
-                            {format(step.timestamp, "PP p")}
-                          </span>
-                          <h4 className="font-semibold">{step.title}</h4>
-                          <Badge className="mb-1 w-fit" variant="outline">
-                            {STEP_LABELS[step.type]}
-                          </Badge>
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline">
+                              {formatStepType(step.type)}
+                            </Badge>
+                            <time className="font-mono text-muted-foreground text-xs">
+                              {format(
+                                step.timestamp,
+                                "MMM d, yyyy 'at' h:mm a"
+                              )}
+                            </time>
+                          </div>
+                          <h3 className="font-semibold">{step.title}</h3>
                           {step.description && (
-                            <p className="rounded-md bg-muted/50 p-2 text-muted-foreground text-sm">
+                            <p className="text-muted-foreground text-sm leading-relaxed">
                               {step.description}
                             </p>
                           )}
-                          <div className="mt-1 flex items-center gap-1 text-muted-foreground text-xs">
-                            <User className="h-3 w-3" />
-                            <span>Actor: {step.actorRole}</span>
-                          </div>
+                          <p className="text-muted-foreground text-xs">
+                            By{" "}
+                            <span className="font-medium text-foreground capitalize">
+                              {step.actorRole}
+                            </span>
+                          </p>
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              </ScrollArea>
+                  })
+                )}
+              </div>
             </CardContent>
           </Card>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add Update</CardTitle>
-                <CardDescription>
-                  Record a new step in the journey
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {allowedStepTypes.length === 0 ? (
-                  <div className="p-4 text-center text-muted-foreground text-sm">
-                    You don't have permission to add steps to this lot.
-                  </div>
-                ) : (
-                  <form className="space-y-4" onSubmit={handleAddStep}>
-                    <div className="space-y-2">
-                      <Label>Step Type</Label>
-                      <Select
-                        onValueChange={(val) =>
-                          setNewStep({ ...newStep, type: val || "" })
-                        }
-                        required
-                        value={newStep.type}
-                      >
-                        <SelectTrigger data-testid="step-type">
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allowedStepTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {STEP_LABELS[type]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Title</Label>
-                      <Input
-                        data-testid="step-title"
-                        onChange={(e) =>
-                          setNewStep({ ...newStep, title: e.target.value })
-                        }
-                        placeholder="e.g. Quality Grade A"
-                        required
-                        value={newStep.title}
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Description (Optional)</Label>
-                      <Textarea
-                        onChange={(e) =>
-                          setNewStep({
-                            ...newStep,
-                            description: e.target.value,
-                          })
-                        }
-                        placeholder="Additional details..."
-                        value={newStep.description}
-                      />
-                    </div>
-
-                    <Button
-                      className="w-full"
-                      data-testid="add-step"
-                      disabled={isAddingStep}
-                      type="submit"
-                    >
-                      {isAddingStep && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Add Step
-                    </Button>
-                  </form>
-                )}
-              </CardContent>
-            </Card>
-          </div>
         </div>
-      </Authenticated>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Add Update</CardTitle>
+              <CardDescription>
+                Record a new step in the journey
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {allowedStepTypes.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-8 text-center">
+                  <Package className="h-6 w-6 text-muted-foreground" />
+                  <p className="text-muted-foreground text-sm">
+                    You don&apos;t have permission to add steps.
+                  </p>
+                </div>
+              ) : (
+                <form className="space-y-4" onSubmit={handleAddStep}>
+                  <div className="space-y-2">
+                    <Label>Step Type</Label>
+                    <Select
+                      onValueChange={(val) =>
+                        setNewStep((prev) => ({ ...prev, type: val || "" }))
+                      }
+                      required
+                      value={newStep.type}
+                    >
+                      <SelectTrigger data-testid="step-type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allowedStepTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {STEP_LABELS[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Title</Label>
+                    <Input
+                      data-testid="step-title"
+                      onChange={(e) =>
+                        setNewStep((prev) => ({
+                          ...prev,
+                          title: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g. Quality Grade A"
+                      required
+                      value={newStep.title}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Description (Optional)</Label>
+                    <Textarea
+                      onChange={(e) =>
+                        setNewStep((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      placeholder="Additional details..."
+                      value={newStep.description}
+                    />
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    data-testid="add-step"
+                    disabled={isAddingStep}
+                    type="submit"
+                  >
+                    {isAddingStep && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Add Step
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
+  );
+}
+
+export default function LotDetailPage() {
+  return (
+    <Authenticated>
+      <LotDetailContent />
+    </Authenticated>
   );
 }

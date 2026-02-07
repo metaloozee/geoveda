@@ -1,6 +1,9 @@
 "use client";
 
-import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import {
+  type AuthClient,
+  ConvexBetterAuthProvider,
+} from "@convex-dev/better-auth/react";
 import { env } from "@geoveda/env/web";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexReactClient } from "convex/react";
@@ -32,7 +35,7 @@ export default function Providers({
       <WagmiProvider config={config}>
         <QueryClientProvider client={queryClient}>
           <ConvexBetterAuthProvider
-            authClient={authClient as any}
+            authClient={authClient as unknown as AuthClient}
             client={convex}
             initialToken={initialToken}
           >

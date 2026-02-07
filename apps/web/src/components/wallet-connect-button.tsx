@@ -22,15 +22,21 @@ export function WalletConnectButton() {
   };
 
   const handleSignIn = async () => {
-    if (!(address && chainId)) return;
+    if (!(address && chainId)) {
+      return;
+    }
 
     try {
       setIsSigningIn(true);
 
       // 1. Get nonce from Better Auth
-      const { nonce } = await (authClient as any).siwe.nonce({
+      const nonceResponse = await authClient.siwe.nonce({
         walletAddress: address,
       });
+      if (nonceResponse.error) {
+        throw new Error(nonceResponse.error.message ?? "Failed to get nonce");
+      }
+      const { nonce } = nonceResponse.data;
 
       // 2. Create SIWE message
       const message = createSiweMessage({
@@ -47,15 +53,19 @@ export function WalletConnectButton() {
       const signature = await signMessageAsync({ message });
 
       // 4. Verify signature with Better Auth
-      await (authClient.signIn as any).siwe({
+      const verifyResponse = await authClient.siwe.verify({
         message,
         signature,
-        callbackURL: "/dashboard",
+        walletAddress: address,
       });
+      if (verifyResponse.error) {
+        throw new Error(verifyResponse.error.message ?? "Verification failed");
+      }
+
+      window.location.href = "/dashboard";
 
       toast.success("Signed in with Ethereum");
-    } catch (error) {
-      console.error("SIWE error:", error);
+    } catch {
       toast.error("Failed to sign in");
     } finally {
       setIsSigningIn(false);
@@ -110,5 +120,5 @@ export function WalletConnectButton() {
     );
   }
 
-  return null; // Connected and signed in (handled by UserMenu usually, or this button hides)
+  return null;
 }

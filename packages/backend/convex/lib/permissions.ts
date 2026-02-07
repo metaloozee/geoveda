@@ -84,7 +84,7 @@ export async function requireRole(
   return appUser;
 }
 
-export async function requireAdmin(
+export function requireAdmin(
   ctx: QueryCtx | MutationCtx
 ): Promise<Doc<"users">> {
   return requireRole(ctx, "admin");

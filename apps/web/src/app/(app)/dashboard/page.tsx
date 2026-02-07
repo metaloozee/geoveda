@@ -7,11 +7,11 @@ import {
   Unauthenticated,
   useQuery,
 } from "convex/react";
-import { Loader2, Package, PlusCircle, User } from "lucide-react";
+import { Leaf, Loader2, Package, PlusCircle, Wallet } from "lucide-react";
+
 import Link from "next/link";
 
 import { AuthBootstrap } from "@/components/auth-bootstrap";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -19,105 +19,128 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import UserMenu from "@/components/user-menu";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 
-export default function DashboardPage() {
-  // Cast api to any to avoid type errors when codegen hasn't run fully
-  const safeApi = api as any;
-  const user = useQuery(safeApi.users.getCurrent);
+function AuthenticatedDashboard() {
+  const user = useQuery(api.users.getCurrent);
+  const lots = useQuery(api.lots.list);
 
+  const totalLots = lots?.length ?? 0;
+  const completeLots = lots?.filter((l) => l.status === "complete").length ?? 0;
+  const inProgress =
+    lots?.filter((l) => l.status === "in_progress").length ?? 0;
+
+  return (
+    <div className="space-y-8 p-6">
+      <div>
+        <h1 className="font-semibold text-2xl tracking-tight">Dashboard</h1>
+        <p className="mt-1 text-muted-foreground text-sm">
+          Welcome back
+          {user?.role && user.role !== "unassigned" ? (
+            <span>
+              , <span className="capitalize">{user.role}</span>
+            </span>
+          ) : null}
+          . Here&apos;s an overview of your supply chain.
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="font-medium text-sm">Total Lots</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl">{totalLots}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="font-medium text-sm">In Progress</CardTitle>
+            <Loader2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl">{inProgress}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="font-medium text-sm">Completed</CardTitle>
+            <Leaf className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="font-bold text-2xl">{completeLots}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link className="block" href="/lots/new">
+          <Card className="group h-full cursor-pointer transition-colors hover:border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
+                  <PlusCircle className="h-4 w-4 text-primary" />
+                </div>
+                Register New Lot
+              </CardTitle>
+              <CardDescription>
+                Create a new product batch and generate a tracking QR code.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        <Link className="block" href="/lots">
+          <Card className="group h-full cursor-pointer transition-colors hover:border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
+                  <Package className="h-4 w-4 text-primary" />
+                </div>
+                View Inventory
+              </CardTitle>
+              <CardDescription>
+                Browse tracked lots, view details, and update status.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardPage() {
   return (
     <>
       <AuthBootstrap />
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/30 p-4">
-        <Authenticated>
-          <div className="flex w-full max-w-4xl flex-col items-center gap-8">
-            <div className="space-y-2 text-center">
-              <h1 className="font-bold text-3xl tracking-tight">
-                Supply Chain Dashboard
-              </h1>
-              <p className="text-muted-foreground">
-                Manage your product lots and track their journey.
-              </p>
-            </div>
-
-            <div className="grid w-full max-w-2xl gap-6 sm:grid-cols-2">
-              <Link className="block h-full" href="/lots/new">
-                <Card className="flex h-full cursor-pointer flex-col border-primary/20 transition-shadow hover:shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <PlusCircle className="h-5 w-5 text-primary" />
-                      Register New Lot
-                    </CardTitle>
-                    <CardDescription>
-                      Create a new product batch and generate a tracking QR
-                      code.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="mt-auto">
-                    <Button className="w-full">Create Lot</Button>
-                  </CardContent>
-                </Card>
-              </Link>
-
-              <Link className="block h-full" href="/lots">
-                <Card className="flex h-full cursor-pointer flex-col border-primary/20 transition-shadow hover:shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5 text-primary" />
-                      View Inventory
-                    </CardTitle>
-                    <CardDescription>
-                      Browse all tracked lots, view details, and update status.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="mt-auto">
-                    <Button className="w-full" variant="outline">
-                      View All Lots
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-
-            <div className="mt-8 flex flex-col items-center gap-4">
-              <div className="flex items-center gap-2 rounded-full border bg-background px-4 py-2 shadow-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium text-sm">
-                  Signed in as{" "}
-                  <span className="text-primary capitalize">
-                    {user?.role || "User"}
-                  </span>
-                </span>
-              </div>
-              <UserMenu />
-            </div>
+      <Authenticated>
+        <AuthenticatedDashboard />
+      </Authenticated>
+      <Unauthenticated>
+        <div className="flex min-h-[80vh] flex-col items-center justify-center gap-6 p-4 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Wallet className="h-7 w-7 text-primary" />
           </div>
-        </Authenticated>
-        <Unauthenticated>
-          <div className="flex max-w-md flex-col items-center gap-6 text-center">
-            <div className="space-y-2">
-              <h1 className="font-bold text-3xl tracking-tight">
-                Welcome to Geoveda
-              </h1>
-              <p className="text-muted-foreground">
-                Blockchain-enabled supply chain traceability platform. Connect
-                your wallet to get started.
-              </p>
-            </div>
-            <WalletConnectButton />
-          </div>
-        </Unauthenticated>
-        <AuthLoading>
-          <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground text-sm">
-              Loading authentication...
+          <div className="space-y-2">
+            <h1 className="font-semibold text-2xl tracking-tight">
+              Welcome to Geoveda
+            </h1>
+            <p className="mx-auto max-w-sm text-muted-foreground text-sm">
+              Blockchain-backed supply chain traceability. Connect your wallet
+              to manage product lots.
             </p>
           </div>
-        </AuthLoading>
-      </div>
+          <WalletConnectButton />
+        </div>
+      </Unauthenticated>
+      <AuthLoading>
+        <div className="flex min-h-[80vh] items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </AuthLoading>
     </>
   );
 }

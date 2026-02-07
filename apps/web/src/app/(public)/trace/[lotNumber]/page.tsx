@@ -2,24 +2,26 @@
 
 import { api } from "@geoveda/backend/convex/_generated/api";
 import { useQuery } from "convex/react";
+import { format } from "date-fns";
 import {
+  ArrowLeft,
   CheckCircle2,
   ClipboardCheck,
   Factory,
+  Leaf,
+  Loader2,
+  MapPin,
   Package,
   Sprout,
   Store,
   Truck,
 } from "lucide-react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 interface TimelineStep {
   type: string;
@@ -29,6 +31,27 @@ interface TimelineStep {
   timestamp: number;
 }
 
+const STEP_ICONS: Record<string, typeof Sprout> = {
+  harvest: Sprout,
+  process: Factory,
+  quality_check: ClipboardCheck,
+  transport: Truck,
+  receive: Package,
+  retail: Store,
+};
+
+const STEP_COLORS: Record<string, string> = {
+  harvest: "text-green-600 bg-green-50 dark:bg-green-950/40",
+  process: "text-orange-600 bg-orange-50 dark:bg-orange-950/40",
+  quality_check: "text-blue-600 bg-blue-50 dark:bg-blue-950/40",
+  transport: "text-amber-600 bg-amber-50 dark:bg-amber-950/40",
+  receive: "text-purple-600 bg-purple-50 dark:bg-purple-950/40",
+  retail: "text-cyan-600 bg-cyan-50 dark:bg-cyan-950/40",
+};
+
+const formatStepType = (type: string) =>
+  type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
 export default function TracePage() {
   const params = useParams();
   const lotNumber = decodeURIComponent(params.lotNumber as string);
@@ -37,22 +60,29 @@ export default function TracePage() {
 
   if (data === undefined) {
     return (
-      <div className="container mx-auto flex h-[50vh] items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">
-          Loading trace data...
-        </div>
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     );
   }
 
   if (data === null) {
     return (
-      <div className="container mx-auto flex h-[50vh] flex-col items-center justify-center gap-4">
-        <h1 className="font-bold text-2xl">Lot Not Found</h1>
-        <p className="text-muted-foreground">
-          We couldn't find any information for Lot #
-          <span className="font-mono text-foreground">{lotNumber}</span>
-        </p>
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4 px-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          <Package className="h-7 w-7 text-muted-foreground" />
+        </div>
+        <div className="space-y-1 text-center">
+          <h1 className="font-semibold text-xl">Lot not found</h1>
+          <p className="text-muted-foreground text-sm">
+            No records for{" "}
+            <span className="font-mono text-foreground">{lotNumber}</span>
+          </p>
+        </div>
+        <Button render={<Link href="/" />} size="sm" variant="outline">
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Back to search
+        </Button>
         <div className="hidden" data-testid="trace-empty">
           Empty State Marker
         </div>
@@ -61,101 +91,112 @@ export default function TracePage() {
   }
 
   const { lot, timeline } = data;
+  const typedTimeline = timeline as TimelineStep[];
 
-  const getStepIcon = (type: string) => {
-    switch (type) {
-      case "harvest":
-        return <Sprout className="h-5 w-5 text-green-500" />;
-      case "process":
-        return <Factory className="h-5 w-5 text-orange-500" />;
-      case "quality_check":
-        return <ClipboardCheck className="h-5 w-5 text-blue-500" />;
-      case "transport":
-        return <Truck className="h-5 w-5 text-yellow-500" />;
-      case "receive":
-        return <Package className="h-5 w-5 text-purple-500" />;
-      case "retail":
-        return <Store className="h-5 w-5 text-cyan-500" />;
-      default:
-        return <CheckCircle2 className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const formatStepType = (type: string) => {
-    return type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  };
+  const statusVariant = lot.status === "complete" ? "default" : "secondary";
 
   return (
-    <div className="container mx-auto max-w-3xl space-y-8 px-4 py-8">
+    <div className="mx-auto max-w-2xl space-y-8 px-4 py-8">
+      <Button
+        className="text-muted-foreground"
+        render={<Link href="/" />}
+        size="sm"
+        variant="ghost"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4" />
+        Back
+      </Button>
+
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-2xl">{lot.productName}</CardTitle>
-              <CardDescription className="font-mono text-lg">
+            <div className="space-y-1">
+              <CardTitle className="text-xl">{lot.productName}</CardTitle>
+              <p className="font-mono text-muted-foreground text-sm">
                 {lot.lotNumber}
-              </CardDescription>
+              </p>
             </div>
-            <Badge
-              variant={lot.status === "complete" ? "default" : "secondary"}
-            >
-              {lot.status.toUpperCase()}
+            <Badge variant={statusVariant}>
+              {lot.status.replace("_", " ").toUpperCase()}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <span className="font-medium text-muted-foreground text-sm">
-              Origin
-            </span>
-            <p>{lot.origin}</p>
+        <Separator />
+        <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Origin:</span>
+            <span className="font-medium">{lot.origin}</span>
           </div>
-          <div>
-            <span className="font-medium text-muted-foreground text-sm">
-              Created At
+          <div className="flex items-center gap-2 text-sm">
+            <Leaf className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Created:</span>
+            <span className="font-medium">
+              {format(lot.createdAt, "MMM d, yyyy")}
             </span>
-            <p>{new Date(lot.createdAt).toLocaleDateString()}</p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent md:before:mx-auto md:before:translate-x-0">
-        {(timeline as TimelineStep[]).map((step, index) => (
-          <div
-            className="group is-active relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse"
-            key={`${step.timestamp}-${index}`}
-          >
-            <div className="z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-background shadow md:order-1 md:group-even:translate-x-1/2 md:group-odd:-translate-x-1/2">
-              {getStepIcon(step.type)}
-            </div>
-
-            <Card className="w-[calc(100%-4rem)] p-4 md:w-[calc(50%-2.5rem)]">
-              <div className="mb-1 flex items-center justify-between space-x-2">
-                <Badge variant="outline">{formatStepType(step.type)}</Badge>
-                <time className="font-mono text-muted-foreground text-xs">
-                  {new Date(step.timestamp).toLocaleString()}
-                </time>
-              </div>
-              <h3 className="mb-1 font-bold text-lg">{step.title}</h3>
-              {step.description && (
-                <p className="mb-2 text-muted-foreground text-sm">
-                  {step.description}
-                </p>
-              )}
-              <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                <span className="font-medium text-foreground">Actor:</span>{" "}
-                {step.actorRole}
-              </div>
-            </Card>
-          </div>
-        ))}
-
-        {timeline.length === 0 && (
-          <div className="py-8 text-center text-muted-foreground">
-            No history available yet.
-          </div>
-        )}
+      <div className="space-y-2">
+        <h2 className="font-semibold text-lg">Journey Timeline</h2>
+        <p className="text-muted-foreground text-sm">
+          {typedTimeline.length} step{typedTimeline.length !== 1 ? "s" : ""}{" "}
+          recorded
+        </p>
       </div>
+
+      {typedTimeline.length === 0 ? (
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-12 text-center">
+          <Package className="h-8 w-8 text-muted-foreground" />
+          <p className="text-muted-foreground text-sm">
+            No steps recorded yet.
+          </p>
+        </div>
+      ) : (
+        <div className="relative ml-4 space-y-0 border-muted-foreground/20 border-l pl-8">
+          {typedTimeline.map((step, index) => {
+            const Icon = STEP_ICONS[step.type] ?? CheckCircle2;
+            const colorClass =
+              STEP_COLORS[step.type] ?? "text-muted-foreground bg-muted";
+            const isLast = index === typedTimeline.length - 1;
+
+            return (
+              <div
+                className={`relative pb-8 ${isLast ? "pb-0" : ""}`}
+                key={`${step.timestamp}-${index}`}
+              >
+                <span
+                  className={`absolute -left-12 flex h-8 w-8 items-center justify-center rounded-full ring-4 ring-background ${colorClass}`}
+                >
+                  <Icon className="h-4 w-4" />
+                </span>
+
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline">{formatStepType(step.type)}</Badge>
+                    <time className="font-mono text-muted-foreground text-xs">
+                      {format(step.timestamp, "MMM d, yyyy 'at' h:mm a")}
+                    </time>
+                  </div>
+                  <h3 className="font-semibold">{step.title}</h3>
+                  {step.description && (
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {step.description}
+                    </p>
+                  )}
+                  <p className="text-muted-foreground text-xs">
+                    By{" "}
+                    <span className="font-medium text-foreground capitalize">
+                      {step.actorRole}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
