@@ -13,6 +13,7 @@
     "better-auth": "catalog:",
     "convex": "catalog:",
     "dotenv": "catalog:",
+    "viem": "^2.31.2",
     "zod": "catalog:"
   },
   "devDependencies": {

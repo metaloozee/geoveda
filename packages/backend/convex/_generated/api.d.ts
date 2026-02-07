@@ -11,7 +11,12 @@
 import type * as auth from "../auth.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
+import type * as lib_permissions from "../lib/permissions.js";
+import type * as lots from "../lots.js";
 import type * as privateData from "../privateData.js";
+import type * as steps from "../steps.js";
+import type * as trace from "../trace.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -23,7 +28,12 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   healthCheck: typeof healthCheck;
   http: typeof http;
+  "lib/permissions": typeof lib_permissions;
+  lots: typeof lots;
   privateData: typeof privateData;
+  steps: typeof steps;
+  trace: typeof trace;
+  users: typeof users;
 }>;
 
 /**
