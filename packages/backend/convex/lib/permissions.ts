@@ -1,4 +1,5 @@
 import { ConvexError } from "convex/values";
+import { components } from "../_generated/api";
 import type { Doc } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { authComponent } from "../auth";
@@ -9,7 +10,8 @@ interface BetterAuthUser {
   _id: string;
   name: string;
   email: string;
-  accounts?: Array<{ providerId: string; accountId: string }>;
+  emailVerified: boolean;
+  isAnonymous?: boolean | null;
 }
 
 export async function getAuthUser(
@@ -22,11 +24,23 @@ export async function getAuthUser(
   return authUser as unknown as BetterAuthUser;
 }
 
-function extractWalletAddress(authUser: BetterAuthUser): string | null {
-  const siweAccount = authUser.accounts?.find(
-    (acc) => acc.providerId === "siwe"
-  );
-  return siweAccount?.accountId ?? null;
+async function extractWalletAddress(
+  ctx: QueryCtx | MutationCtx,
+  authUserId: string
+): Promise<string | null> {
+  const account = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "account",
+    where: [
+      { field: "userId", value: authUserId },
+      { field: "providerId", value: "siwe" },
+    ],
+  });
+
+  if (!account) {
+    return null;
+  }
+
+  return (account as { accountId?: string }).accountId ?? null;
 }
 
 export async function requireAuth(
@@ -56,15 +70,7 @@ export async function requireRole(
   ctx: QueryCtx | MutationCtx,
   role: UserRole
 ): Promise<Doc<"users">> {
-  const authUser = await requireAuth(ctx);
-
-  const walletAddress = extractWalletAddress(authUser);
-  if (!walletAddress) {
-    throw new ConvexError({
-      code: "INVALID_AUTH",
-      message: "Wallet address not found in auth session",
-    });
-  }
+  const { walletAddress } = await requireAuthWithWallet(ctx);
 
   const appUser = await getAppUser(ctx, walletAddress);
   if (!appUser) {
@@ -98,7 +104,7 @@ export async function getCurrentUser(
     return null;
   }
 
-  const walletAddress = extractWalletAddress(authUser);
+  const walletAddress = await extractWalletAddress(ctx, authUser._id);
   if (!walletAddress) {
     return null;
   }
@@ -110,7 +116,7 @@ export async function requireAuthWithWallet(
   ctx: QueryCtx | MutationCtx
 ): Promise<{ authUser: BetterAuthUser; walletAddress: string }> {
   const authUser = await requireAuth(ctx);
-  const walletAddress = extractWalletAddress(authUser);
+  const walletAddress = await extractWalletAddress(ctx, authUser._id);
 
   if (!walletAddress) {
     throw new ConvexError({

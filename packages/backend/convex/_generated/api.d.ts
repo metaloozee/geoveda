@@ -119,6 +119,16 @@ export declare const components: {
               }
             | {
                 data: {
+                  address: string;
+                  chainId: number;
+                  createdAt: number;
+                  isPrimary: boolean;
+                  userId: string;
+                };
+                model: "walletAddress";
+              }
+            | {
+                data: {
                   createdAt: number;
                   expiresAt: number;
                   identifier: string;
@@ -304,6 +314,38 @@ export declare const components: {
                     | "password"
                     | "createdAt"
                     | "updatedAt"
+                    | "_id";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
+                model: "walletAddress";
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    | "userId"
+                    | "address"
+                    | "chainId"
+                    | "isPrimary"
+                    | "createdAt"
                     | "_id";
                   operator?:
                     | "lt"
@@ -711,6 +753,38 @@ export declare const components: {
                 }>;
               }
             | {
+                model: "walletAddress";
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    | "userId"
+                    | "address"
+                    | "chainId"
+                    | "isPrimary"
+                    | "createdAt"
+                    | "_id";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
                 model: "verification";
                 where?: Array<{
                   connector?: "AND" | "OR";
@@ -978,6 +1052,7 @@ export declare const components: {
             | "user"
             | "session"
             | "account"
+            | "walletAddress"
             | "verification"
             | "twoFactor"
             | "passkey"
@@ -1031,6 +1106,7 @@ export declare const components: {
             | "user"
             | "session"
             | "account"
+            | "walletAddress"
             | "verification"
             | "twoFactor"
             | "passkey"
@@ -1200,6 +1276,45 @@ export declare const components: {
                     | "password"
                     | "createdAt"
                     | "updatedAt"
+                    | "_id";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
+                model: "walletAddress";
+                update: {
+                  address?: string;
+                  chainId?: number;
+                  createdAt?: number;
+                  isPrimary?: boolean;
+                  userId?: string;
+                };
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    | "userId"
+                    | "address"
+                    | "chainId"
+                    | "isPrimary"
+                    | "createdAt"
                     | "_id";
                   operator?:
                     | "lt"
@@ -1688,6 +1803,45 @@ export declare const components: {
                     | "password"
                     | "createdAt"
                     | "updatedAt"
+                    | "_id";
+                  operator?:
+                    | "lt"
+                    | "lte"
+                    | "gt"
+                    | "gte"
+                    | "eq"
+                    | "in"
+                    | "not_in"
+                    | "ne"
+                    | "contains"
+                    | "starts_with"
+                    | "ends_with";
+                  value:
+                    | string
+                    | number
+                    | boolean
+                    | Array<string>
+                    | Array<number>
+                    | null;
+                }>;
+              }
+            | {
+                model: "walletAddress";
+                update: {
+                  address?: string;
+                  chainId?: number;
+                  createdAt?: number;
+                  isPrimary?: boolean;
+                  userId?: string;
+                };
+                where?: Array<{
+                  connector?: "AND" | "OR";
+                  field:
+                    | "userId"
+                    | "address"
+                    | "chainId"
+                    | "isPrimary"
+                    | "createdAt"
                     | "_id";
                   operator?:
                     | "lt"

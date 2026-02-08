@@ -1,7 +1,7 @@
 import { createClient, type GenericCtx } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
-import { betterAuth } from "better-auth";
 import { generateRandomString } from "better-auth/crypto";
+import { type BetterAuthOptions, betterAuth } from "better-auth/minimal";
 import { siwe } from "better-auth/plugins";
 import { verifyMessage } from "viem";
 import { components } from "./_generated/api";
@@ -14,7 +14,7 @@ const siteDomain = new URL(siteUrl).hostname;
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
-function createAuth(ctx: GenericCtx<DataModel>) {
+export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     baseURL: siteUrl,
     trustedOrigins: [siteUrl],
@@ -44,10 +44,8 @@ function createAuth(ctx: GenericCtx<DataModel>) {
         jwksRotateOnTokenGenerationError: true,
       }),
     ],
-  });
-}
-
-export { createAuth };
+  } satisfies BetterAuthOptions);
+};
 
 export const getCurrentUser = query({
   args: {},

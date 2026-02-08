@@ -10,7 +10,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 function UnauthenticatedRedirect() {
   const router = useRouter();
   useEffect(() => {
-    router.push("/");
+    router.push("/connect" as never);
   }, [router]);
   return null;
 }

@@ -2,11 +2,13 @@
   "name": "@geoveda/backend",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "license": "ISC",
   "author": "",
   "scripts": {
     "dev": "convex dev",
-    "dev:setup": "convex dev --configure --until-success"
+    "dev:setup": "convex dev --configure --until-success",
+    "postinstall": "node scripts/patch-better-auth.js"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",

@@ -1,13 +1,9 @@
 "use client";
 
 import { api } from "@geoveda/backend/convex/_generated/api";
-import {
-  Authenticated,
-  AuthLoading,
-  Unauthenticated,
-  useQuery,
-} from "convex/react";
-import { Leaf, Loader2, Package, PlusCircle, Wallet } from "lucide-react";
+import type { Doc } from "@geoveda/backend/convex/_generated/dataModel";
+import { Authenticated, AuthLoading, useQuery } from "convex/react";
+import { Leaf, Loader2, Package, PlusCircle, ShieldOff } from "lucide-react";
 
 import Link from "next/link";
 
@@ -19,7 +15,34 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { WalletConnectButton } from "@/components/wallet-connect-button";
+
+const DASHBOARD_ROLES: Doc<"users">["role"][] = [
+  "farmer",
+  "processor",
+  "distributor",
+  "retailer",
+  "admin",
+];
+
+function AccessDenied() {
+  return (
+    <div
+      className="flex min-h-[60vh] flex-col items-center justify-center gap-3 p-6 text-center"
+      data-testid="dashboard-access-denied"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+        <ShieldOff className="h-6 w-6 text-destructive" />
+      </div>
+      <div className="space-y-1">
+        <p className="font-semibold">Access Pending</p>
+        <p className="text-muted-foreground text-sm">
+          Your account role hasn&apos;t been assigned yet. Please contact an
+          administrator to gain dashboard access.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function AuthenticatedDashboard() {
   const user = useQuery(api.users.getCurrent);
@@ -29,6 +52,21 @@ function AuthenticatedDashboard() {
   const completeLots = lots?.filter((l) => l.status === "complete").length ?? 0;
   const inProgress =
     lots?.filter((l) => l.status === "in_progress").length ?? 0;
+
+  if (user === undefined) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const canAccessDashboard =
+    user !== null && DASHBOARD_ROLES.includes(user.role ?? "unassigned");
+
+  if (!canAccessDashboard) {
+    return <AccessDenied />;
+  }
 
   return (
     <div className="space-y-8 p-6">
@@ -119,23 +157,6 @@ export default function DashboardPage() {
       <Authenticated>
         <AuthenticatedDashboard />
       </Authenticated>
-      <Unauthenticated>
-        <div className="flex min-h-[80vh] flex-col items-center justify-center gap-6 p-4 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <Wallet className="h-7 w-7 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="font-semibold text-2xl tracking-tight">
-              Welcome to Geoveda
-            </h1>
-            <p className="mx-auto max-w-sm text-muted-foreground text-sm">
-              Blockchain-backed supply chain traceability. Connect your wallet
-              to manage product lots.
-            </p>
-          </div>
-          <WalletConnectButton />
-        </div>
-      </Unauthenticated>
       <AuthLoading>
         <div className="flex min-h-[80vh] items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
