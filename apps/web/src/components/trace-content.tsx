@@ -69,7 +69,7 @@ export function TraceContent({ lotNumber }: TraceContentProps) {
     );
   }
 
-  if (data === null) {
+  if (data == null) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center gap-4 px-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
