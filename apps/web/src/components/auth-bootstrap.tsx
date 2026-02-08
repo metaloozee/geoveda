@@ -1,13 +1,17 @@
 "use client";
 
+import { useConvexMutation } from "@convex-dev/react-query";
 import { api } from "@geoveda/backend/convex/_generated/api";
-import { useMutation } from "convex/react";
+import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
 
 export function AuthBootstrap() {
   const { data: session } = authClient.useSession();
-  const ensureUser = useMutation(api.users.ensureUser);
+  const ensureUserMutationFn = useConvexMutation(api.users.ensureUser);
+  const { mutateAsync: ensureUser } = useMutation({
+    mutationFn: ensureUserMutationFn,
+  });
 
   useEffect(() => {
     if (session?.user) {

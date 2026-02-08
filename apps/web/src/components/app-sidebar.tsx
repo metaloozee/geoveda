@@ -1,7 +1,8 @@
 "use client";
 
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@geoveda/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Home,
   LayoutDashboard,
@@ -40,7 +41,7 @@ const adminItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const user = useQuery(api.users.getCurrent);
+  const { data: user } = useQuery(convexQuery(api.users.getCurrent, {}));
   const isAdmin = user?.role === "admin";
 
   return (

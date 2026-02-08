@@ -1,48 +1,17 @@
-"use client";
-
-import { api } from "@geoveda/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
-import { ArrowRight, Leaf, Link2, ScanLine, Shield } from "lucide-react";
+import { Leaf, Link2, ScanLine, Shield } from "lucide-react";
 import Link from "next/link";
+import { HealthIndicator } from "@/components/health-indicator";
+import { TraceButton } from "@/components/trace-button";
 import { TraceSearch } from "@/components/trace-search";
 import { Button } from "@/components/ui/button";
 
-function getHealthDotClass(healthCheck: string | undefined): string {
-  if (healthCheck === "OK") {
-    return "bg-green-500";
-  }
-  if (healthCheck === undefined) {
-    return "animate-pulse bg-muted-foreground";
-  }
-  return "bg-destructive";
-}
-
-function getHealthLabel(healthCheck: string | undefined): string {
-  if (healthCheck === "OK") {
-    return "All systems operational";
-  }
-  if (healthCheck === undefined) {
-    return "Connecting...";
-  }
-  return "Service disrupted";
-}
-
 export default function Home() {
-  const healthCheck = useQuery(api.healthCheck.get);
-
   return (
     <div className="flex flex-col">
       <section className="relative flex flex-col items-center justify-center gap-8 px-4 py-24 text-center">
-        <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 -z-10 bg-linear-to-b from-primary/5 via-primary/2 to-transparent" />
 
-        <div className="flex items-center gap-2 rounded-full border bg-background px-4 py-1.5 text-sm shadow-sm">
-          <span
-            className={`h-2 w-2 rounded-full ${getHealthDotClass(healthCheck)}`}
-          />
-          <span className="text-muted-foreground">
-            {getHealthLabel(healthCheck)}
-          </span>
-        </div>
+        <HealthIndicator />
 
         <div className="space-y-4">
           <h1 className="font-bold text-4xl tracking-tight sm:text-5xl">
@@ -58,22 +27,9 @@ export default function Home() {
 
         <div className="flex gap-3">
           <Button asChild size="lg">
-            <Link href="/dashboard">
-              Get started
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <Link href="/dashboard">Get started</Link>
           </Button>
-          <Button
-            onClick={() => {
-              document
-                .getElementById("trace")
-                ?.scrollIntoView({ behavior: "smooth" });
-            }}
-            size="lg"
-            variant="outline"
-          >
-            Trace a product
-          </Button>
+          <TraceButton />
         </div>
       </section>
 

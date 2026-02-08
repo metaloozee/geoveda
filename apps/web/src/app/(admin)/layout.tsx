@@ -1,7 +1,8 @@
 "use client";
 
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@geoveda/backend/convex/_generated/api";
-import { useQuery } from "convex/react";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2, ShieldOff } from "lucide-react";
 
 export default function AdminLayout({
@@ -9,9 +10,11 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = useQuery(api.users.getCurrent);
+  const { data: user, isPending } = useQuery(
+    convexQuery(api.users.getCurrent, {})
+  );
 
-  if (user === undefined) {
+  if (isPending || user === undefined) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
