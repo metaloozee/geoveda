@@ -56,13 +56,15 @@ function CreateLotContent() {
     <div className="space-y-6 p-6">
       <div>
         <Button
+          asChild
           className="mb-4 text-muted-foreground"
-          render={<Link href={"/lots" as never} />}
           size="sm"
           variant="ghost"
         >
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
-          Back to Lots
+          <Link href={"/lots" as never}>
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            Back to Lots
+          </Link>
         </Button>
         <h1 className="font-semibold text-2xl tracking-tight">
           Create New Lot
@@ -118,12 +120,8 @@ function CreateLotContent() {
             </CardContent>
             <Separator />
             <div className="flex justify-end gap-2 p-6">
-              <Button
-                render={<Link href={"/lots" as never} />}
-                type="button"
-                variant="outline"
-              >
-                Cancel
+              <Button asChild type="button" variant="outline">
+                <Link href={"/lots" as never}>Cancel</Link>
               </Button>
               <Button
                 data-testid="create-lot"

@@ -148,13 +148,15 @@ function LotDetailContent() {
   return (
     <div className="space-y-6 p-6">
       <Button
+        asChild
         className="text-muted-foreground"
-        render={<Link href={"/lots" as never} />}
         size="sm"
         variant="ghost"
       >
-        <ArrowLeft className="mr-1.5 h-4 w-4" />
-        Back to Lots
+        <Link href={"/lots" as never}>
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Back to Lots
+        </Link>
       </Button>
 
       <div className="grid gap-6 lg:grid-cols-3">

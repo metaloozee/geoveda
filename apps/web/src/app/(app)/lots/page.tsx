@@ -49,13 +49,11 @@ function LotsEmptyState({ hasFilter }: { hasFilter: boolean }) {
         </p>
       </div>
       {!hasFilter && (
-        <Button
-          render={<Link href={"/lots/new" as never} />}
-          size="sm"
-          variant="outline"
-        >
-          <PlusCircle className="mr-1.5 h-4 w-4" />
-          Create Lot
+        <Button asChild size="sm" variant="outline">
+          <Link href={"/lots/new" as never}>
+            <PlusCircle className="mr-1.5 h-4 w-4" />
+            Create Lot
+          </Link>
         </Button>
       )}
     </div>
@@ -95,12 +93,8 @@ function LotsTable({ lots }: { lots: LotItem[] }) {
                 {format(lot.createdAt, "MMM d, yyyy")}
               </TableCell>
               <TableCell className="text-right">
-                <Button
-                  render={<Link href={`/lots/${lot._id}` as never} />}
-                  size="sm"
-                  variant="ghost"
-                >
-                  View
+                <Button asChild size="sm" variant="ghost">
+                  <Link href={`/lots/${lot._id}` as never}>View</Link>
                 </Button>
               </TableCell>
             </TableRow>
@@ -148,9 +142,11 @@ function LotsContent() {
             Track and manage product lots across the supply chain.
           </p>
         </div>
-        <Button render={<Link href={"/lots/new" as never} />}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          New Lot
+        <Button asChild>
+          <Link href={"/lots/new" as never}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Lot
+          </Link>
         </Button>
       </div>
 

@@ -58,22 +58,20 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  isActive={pathname === "/"}
-                  render={<Link href={"/" as never} />}
-                >
-                  <Home />
-                  <span>Home</span>
+                <SidebarMenuButton asChild isActive={pathname === "/"}>
+                  <Link href={"/" as never}>
+                    <Home />
+                    <span>Home</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    isActive={pathname === item.url}
-                    render={<Link href={item.url as never} />}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
+                  <SidebarMenuButton asChild isActive={pathname === item.url}>
+                    <Link href={item.url as never}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -91,11 +89,13 @@ export function AppSidebar() {
                   {adminItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
+                        asChild
                         isActive={pathname === item.url}
-                        render={<Link href={item.url as never} />}
                       >
-                        <item.icon />
-                        <span>{item.title}</span>
+                        <Link href={item.url as never}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}

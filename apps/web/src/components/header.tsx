@@ -18,9 +18,11 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <ModeToggle />
-          <Button render={<Link href="/dashboard" />} size="sm" variant="ghost">
-            <LogIn className="mr-1.5 h-4 w-4" />
-            Dashboard
+          <Button asChild variant="default">
+            <Link href="/dashboard">
+              Dashboard
+              <LogIn className="h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </div>

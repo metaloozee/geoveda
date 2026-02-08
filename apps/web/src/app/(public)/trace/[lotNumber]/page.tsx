@@ -79,9 +79,11 @@ export default function TracePage() {
             <span className="font-mono text-foreground">{lotNumber}</span>
           </p>
         </div>
-        <Button render={<Link href="/" />} size="sm" variant="outline">
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
-          Back to search
+        <Button asChild size="sm" variant="outline">
+          <Link href="/">
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            Back to search
+          </Link>
         </Button>
         <div className="hidden" data-testid="trace-empty">
           Empty State Marker
@@ -98,13 +100,15 @@ export default function TracePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-8">
       <Button
+        asChild
         className="text-muted-foreground"
-        render={<Link href="/" />}
         size="sm"
         variant="ghost"
       >
-        <ArrowLeft className="mr-1.5 h-4 w-4" />
-        Back
+        <Link href="/">
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Back
+        </Link>
       </Button>
 
       <Card>

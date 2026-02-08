@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 
 function getHealthDotClass(healthCheck: string | undefined): string {
   if (healthCheck === "OK") {
-    return "bg-success";
+    return "bg-green-500";
   }
   if (healthCheck === undefined) {
     return "animate-pulse bg-muted-foreground";
@@ -57,9 +57,11 @@ export default function Home() {
         </div>
 
         <div className="flex gap-3">
-          <Button render={<Link href="/dashboard" />} size="lg">
-            Get started
-            <ArrowRight className="ml-1.5 h-4 w-4" />
+          <Button asChild size="lg">
+            <Link href="/dashboard">
+              Get started
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </Button>
           <Button
             onClick={() => {
