@@ -1,9 +1,7 @@
 import { Leaf, Link2, ScanLine, Shield } from "lucide-react";
-import Link from "next/link";
 import { HealthIndicator } from "@/components/health-indicator";
 import { TraceButton } from "@/components/trace-button";
 import { TraceSearch } from "@/components/trace-search";
-import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
@@ -14,7 +12,10 @@ export default function Home() {
         <HealthIndicator />
 
         <div className="space-y-4">
-          <h1 className="font-bold text-4xl tracking-tight sm:text-5xl">
+          <h1
+            className="text-5xl tracking-tight lg:text-8xl"
+            style={{ fontFamily: "var(--font-instrument-serif), serif" }}
+          >
             Know your product's
             <br />
             <span className="text-primary">entire journey</span>
@@ -26,9 +27,6 @@ export default function Home() {
         </div>
 
         <div className="flex gap-3">
-          <Button asChild size="lg">
-            <Link href="/dashboard">Get started</Link>
-          </Button>
           <TraceButton />
         </div>
       </section>

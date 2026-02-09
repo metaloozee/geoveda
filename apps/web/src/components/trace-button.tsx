@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRightIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function TraceButton() {
@@ -14,6 +15,7 @@ export function TraceButton() {
       variant="outline"
     >
       Trace a product
+      <ArrowRightIcon className="size-4" />
     </Button>
   );
 }
