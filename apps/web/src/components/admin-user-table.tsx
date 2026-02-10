@@ -4,52 +4,13 @@ import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
 import { api } from "@geoveda/backend/convex/_generated/api";
 import type { Doc, Id } from "@geoveda/backend/convex/_generated/dataModel";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { Loader2, Shield, Users } from "lucide-react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { getAdminUserColumns } from "@/components/admin-user-table-columns";
+import { DataTable } from "@/components/ui/data-table";
 
 type UserRole = Doc<"users">["role"];
-
-const ROLES: UserRole[] = [
-  "farmer",
-  "processor",
-  "distributor",
-  "retailer",
-  "admin",
-  "unassigned",
-];
-
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400",
-  farmer: "bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400",
-  processor:
-    "bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400",
-  distributor:
-    "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400",
-  retailer:
-    "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400",
-  unassigned: "",
-};
-
-const maskAddress = (address: string): string =>
-  `${address.slice(0, 6)}…${address.slice(-4)}`;
 
 export function AdminUserTable() {
   const { data: users, isPending } = useQuery(convexQuery(api.users.list, {}));
@@ -58,14 +19,22 @@ export function AdminUserTable() {
     mutationFn: setRoleMutationFn,
   });
 
-  const handleRoleChange = async (userId: Id<"users">, newRole: string) => {
-    try {
-      await setRole({ userId, role: newRole as UserRole });
-      toast.success("Role updated successfully");
-    } catch {
-      toast.error("Failed to update role");
-    }
-  };
+  const handleRoleChange = useCallback(
+    async (userId: Id<"users">, newRole: string) => {
+      try {
+        await setRole({ userId, role: newRole as UserRole });
+        toast.success("Role updated successfully");
+      } catch {
+        toast.error("Failed to update role");
+      }
+    },
+    [setRole]
+  );
+
+  const columns = useMemo(
+    () => getAdminUserColumns({ onRoleChange: handleRoleChange }),
+    [handleRoleChange]
+  );
 
   if (isPending) {
     return (
@@ -100,71 +69,11 @@ export function AdminUserTable() {
           <p className="text-muted-foreground text-sm">No users found.</p>
         </div>
       ) : (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Wallet Address</TableHead>
-                    <TableHead>Current Role</TableHead>
-                    <TableHead className="hidden sm:table-cell">
-                      Change Role
-                    </TableHead>
-                    <TableHead className="hidden md:table-cell">
-                      Joined
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user._id}>
-                      <TableCell className="font-mono text-sm">
-                        {maskAddress(user.walletAddress)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={ROLE_COLORS[user.role] ?? ""}
-                          variant="secondary"
-                        >
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Select
-                          defaultValue={user.role}
-                          onValueChange={(value) =>
-                            value && handleRoleChange(user._id, value)
-                          }
-                        >
-                          <SelectTrigger
-                            className="w-[160px]"
-                            data-testid={`role-select-${user._id}`}
-                          >
-                            <SelectValue
-                              data-testid={`role-value-${user._id}`}
-                              placeholder="Select role"
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ROLES.map((role) => (
-                              <SelectItem key={role} value={role}>
-                                <span className="capitalize">{role}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="hidden text-muted-foreground md:table-cell">
-                        {format(user.createdAt, "MMM d, yyyy")}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+        <DataTable
+          columns={columns}
+          data={users}
+          searchPlaceholder="Search by username, wallet, or role..."
+        />
       )}
     </div>
   );

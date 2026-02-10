@@ -14,8 +14,8 @@ export default function Header() {
             <Leaf className="h-5 w-5 text-primary" />
             <span className="font-semibold tracking-tight">Geoveda</span>
           </Link>
-          <div className="flex flex-row items-center justify-center gap-4 px-6 text-muted-foreground">
-            <Button asChild variant="ghost">
+          <div className="flex flex-row items-center justify-center gap-4 px-4 text-muted-foreground">
+            <Button asChild size="sm" variant="ghost">
               <Link href="/dashboard">Dashboard</Link>
             </Button>
           </div>
