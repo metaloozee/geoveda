@@ -18,14 +18,11 @@ import {
   Truck,
 } from "lucide-react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-
-interface TracePageProps {
-  params: { lotNumber: string };
-}
 
 interface TimelineStep {
   type: string;
@@ -56,7 +53,8 @@ const STEP_COLORS: Record<string, string> = {
 const formatStepType = (type: string) =>
   type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
-export default function TracePage({ params }: TracePageProps) {
+export default function TracePage() {
+  const params = useParams<{ lotNumber: string }>();
   const lotNumber = decodeURIComponent(params.lotNumber);
   const { data, isPending } = useQuery(
     convexQuery(api.trace.getByLotNumber, { lotNumber })
