@@ -5,11 +5,11 @@ import { api } from "@geoveda/backend/convex/_generated/api";
 import { useForm } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Authenticated } from "convex/react";
-import { Loader2, MapPin, Package, PlusIcon, Search } from "lucide-react";
+import { Loader2, MapPin, Package, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { LotsTable } from "@/components/lots-table";
+import { LotsDataTable } from "@/components/lots-data-table";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +26,6 @@ import { Label } from "@/components/ui/label";
 function LotsContentInner() {
   const router = useRouter();
   const { data: lots, isPending } = useQuery(convexQuery(api.lots.list, {}));
-  const [filter, setFilter] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const createLotMutationFn = useConvexMutation(api.lots.create);
   const { mutateAsync: createLot, isPending: isCreatingLot } = useMutation({
@@ -53,44 +52,24 @@ function LotsContentInner() {
     },
   });
 
-  const filteredLots =
-    lots?.filter(
-      (lot) =>
-        lot.productName.toLowerCase().includes(filter.toLowerCase()) ||
-        lot.lotNumber.toLowerCase().includes(filter.toLowerCase()) ||
-        lot.origin.toLowerCase().includes(filter.toLowerCase())
-    ) ?? [];
-
-  const renderContent = () => {
-    if (isPending) {
-      return (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
-      );
-    }
-
-    return (
-      <LotsTable
-        emptyState={filter.length > 0 ? "filtered" : "all"}
-        lots={filteredLots}
-        onCreateLot={() => setIsCreateDialogOpen(true)}
-      />
-    );
-  };
+  const lotCountLabel = useMemo(() => {
+    const lotCount = lots?.length ?? 0;
+    return `${lotCount} lot${lotCount === 1 ? "" : "s"}`;
+  }, [lots]);
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
           <h1 className="font-semibold text-2xl tracking-tight">All Lots</h1>
-          <p className="mt-1 text-muted-foreground text-sm">
-            Track and manage product lots across the supply chain.
+          <p className="text-muted-foreground text-sm">
+            Track and manage product lots across the supply chain.{" "}
+            {lotCountLabel}
           </p>
         </div>
         <Dialog onOpenChange={setIsCreateDialogOpen} open={isCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <PlusIcon className="h-4 w-4" />
               New Lot
             </Button>
@@ -205,17 +184,11 @@ function LotsContentInner() {
           </DialogContent>
         </Dialog>
       </div>
-
-      <div className="relative mb-4">
-        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Search by name, lot number, or origin…"
-          value={filter}
-        />
-      </div>
-      {renderContent()}
+      <LotsDataTable
+        isPending={isPending}
+        lots={lots}
+        onCreateLot={() => setIsCreateDialogOpen(true)}
+      />
     </div>
   );
 }

@@ -33,10 +33,10 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
       <Button
         asChild
-        className="text-muted-foreground"
+        className="w-fit text-muted-foreground"
         size="sm"
         variant="ghost"
       >
@@ -46,8 +46,8 @@ export default function AdminPage() {
         </Link>
       </Button>
 
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+      <div className="flex items-start gap-3 sm:items-center">
+        <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
           <Shield className="h-5 w-5 text-primary" />
         </div>
         <div>
