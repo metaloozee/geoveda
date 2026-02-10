@@ -3,14 +3,7 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@geoveda/backend/convex/_generated/api";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Home,
-  LayoutDashboard,
-  Leaf,
-  Package,
-  PlusCircle,
-  Settings,
-} from "lucide-react";
+import { Home, LayoutDashboard, Leaf, Package, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -32,7 +25,6 @@ import UserMenu from "./user-menu";
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "All Lots", url: "/lots", icon: Package },
-  { title: "Create Lot", url: "/lots/new", icon: PlusCircle },
 ];
 
 const adminItems = [

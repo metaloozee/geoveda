@@ -1,5 +1,5 @@
-import { CreateLotForm } from "@/components/create-lot-form";
+import { redirect } from "next/navigation";
 
 export default function CreateLotPage() {
-  return <CreateLotForm />;
+  redirect("/lots");
 }
