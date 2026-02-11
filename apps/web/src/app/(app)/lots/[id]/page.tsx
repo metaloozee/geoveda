@@ -26,7 +26,13 @@ import { QRCodeSVG } from "qrcode.react";
 import { AddStepForm } from "@/components/add-step-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 const STEP_ICONS: Record<string, typeof Sprout> = {
@@ -99,7 +105,7 @@ function LotDetailContent({ lotId }: { lotId: Id<"lots"> }) {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-4">
+          <CardHeader>
             <div className="flex items-start justify-between">
               <div className="space-y-1">
                 <CardTitle className="text-xl">{lot.productName}</CardTitle>
@@ -113,7 +119,7 @@ function LotDetailContent({ lotId }: { lotId: Id<"lots"> }) {
             </div>
           </CardHeader>
           <Separator />
-          <CardContent className="grid gap-4 pt-4 sm:grid-cols-2">
+          <CardFooter className="flex flex-col items-start justify-start gap-2 lg:flex-row lg:items-center lg:gap-6 lg:pt-4">
             <div className="flex items-center gap-2 text-sm">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Origin:</span>
@@ -126,35 +132,23 @@ function LotDetailContent({ lotId }: { lotId: Id<"lots"> }) {
                 {format(lot.createdAt, "MMM d, yyyy")}
               </span>
             </div>
-          </CardContent>
+          </CardFooter>
         </Card>
 
         <Card className="flex flex-col items-center justify-center p-6">
           <QRCodeSVG
             bgColor="transparent"
             fgColor="currentColor"
-            size={140}
+            size={120}
             value={lot.lotNumber}
           />
-          <p className="mt-3 text-center text-muted-foreground text-xs">
-            Scan to verify authenticity
-          </p>
         </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-lg">Journey Timeline</h2>
-              <p className="text-muted-foreground text-sm">
-                {steps.length} step{steps.length !== 1 ? "s" : ""} recorded
-              </p>
-            </div>
-          </div>
-
           <Card>
-            <CardContent className="pt-6" data-testid="timeline">
+            <CardContent data-testid="timeline">
               <div className="relative ml-4 space-y-0 border-muted-foreground/20 border-l pl-8">
                 <div className="relative pb-8">
                   <span className="absolute -left-12 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary ring-4 ring-background">
@@ -231,7 +225,7 @@ function LotDetailContent({ lotId }: { lotId: Id<"lots"> }) {
         </div>
 
         <div className="space-y-6">
-          <AddStepForm lotId={lotId} />
+          <AddStepForm lotId={lotId} lotStatus={lot.status} steps={steps} />
         </div>
       </div>
     </div>

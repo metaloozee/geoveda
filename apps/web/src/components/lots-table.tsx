@@ -32,10 +32,26 @@ interface LotItem {
 interface LotsTableProps {
   lots: LotItem[];
   emptyState: "all" | "filtered";
+  canCreateLot?: boolean;
   onCreateLot?: () => void;
 }
 
-export function LotsTable({ lots, emptyState, onCreateLot }: LotsTableProps) {
+function getEmptyMessage(isFiltered: boolean, canCreateLot: boolean): string {
+  if (isFiltered) {
+    return "Try adjusting your search.";
+  }
+  if (canCreateLot) {
+    return "Create your first lot to get started.";
+  }
+  return "Contact an admin or farmer to create lots.";
+}
+
+export function LotsTable({
+  lots,
+  emptyState,
+  canCreateLot = false,
+  onCreateLot,
+}: LotsTableProps) {
   if (lots.length === 0) {
     const isFiltered = emptyState === "filtered";
 
@@ -47,19 +63,18 @@ export function LotsTable({ lots, emptyState, onCreateLot }: LotsTableProps) {
         <div className="space-y-1 text-center">
           <p className="font-medium text-sm">No lots found</p>
           <p className="text-muted-foreground text-sm">
-            {isFiltered
-              ? "Try adjusting your search."
-              : "Create your first lot to get started."}
+            {getEmptyMessage(isFiltered, canCreateLot)}
           </p>
         </div>
         {!isFiltered &&
+          canCreateLot &&
           (onCreateLot ? (
             <Button onClick={onCreateLot} size="sm" variant="outline">
               Create Lot
             </Button>
           ) : (
             <Button asChild size="sm" variant="outline">
-              <Link href={"/lots/new" as never}>Create Lot</Link>
+              <Link href={"/lots" as never}>Go to Lots</Link>
             </Button>
           ))}
       </div>

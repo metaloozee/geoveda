@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { canCreateLot } from "@/lib/workflow";
 
 const DASHBOARD_ROLES: Doc<"users">["role"][] = [
   "farmer",
@@ -118,21 +119,23 @@ function AuthenticatedDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Link className="block" href="/lots/new">
-          <Card className="group h-full cursor-pointer transition-colors hover:border-primary/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
-                  <PlusCircle className="h-4 w-4 text-primary" />
-                </div>
-                Register New Lot
-              </CardTitle>
-              <CardDescription>
-                Create a new product batch and generate a tracking QR code.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
+        {canCreateLot(user?.role ?? "") && (
+          <Link className="block" href="/lots?create=1">
+            <Card className="group h-full cursor-pointer transition-colors hover:border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 transition-colors group-hover:bg-primary/20">
+                    <PlusCircle className="h-4 w-4 text-primary" />
+                  </div>
+                  Register New Lot
+                </CardTitle>
+                <CardDescription>
+                  Create a new product batch and generate a tracking QR code.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        )}
 
         <Link className="block" href="/lots">
           <Card className="group h-full cursor-pointer transition-colors hover:border-primary/30">

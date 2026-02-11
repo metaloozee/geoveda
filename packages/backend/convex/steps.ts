@@ -1,21 +1,12 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAppUser, requireAuthWithWallet } from "./lib/permissions";
-
-const ROLE_STEP_PERMISSIONS: Record<string, string[]> = {
-  farmer: ["harvest"],
-  processor: ["process", "quality_check"],
-  distributor: ["transport"],
-  retailer: ["receive", "retail"],
-  admin: [
-    "harvest",
-    "process",
-    "quality_check",
-    "transport",
-    "receive",
-    "retail",
-  ],
-};
+import {
+  canAccessLot,
+  getNextStepType,
+  isRoleAllowedForStep,
+  WORKFLOW_ERROR_CODES,
+} from "./lib/workflow";
 
 const stepType = v.union(
   v.literal("harvest"),
@@ -62,20 +53,19 @@ export const listByLot = query({
       });
     }
 
-    const canViewLot =
-      appUser.role === "admin" || lot.createdBy === appUser._id;
-    if (!canViewLot) {
+    const lotSteps = await ctx.db
+      .query("steps")
+      .withIndex("by_lot_and_timestamp", (q) => q.eq("lotId", args.lotId))
+      .order("asc")
+      .collect();
+    if (!canAccessLot(appUser, lot, lotSteps)) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: "You do not have permission to view this lot",
       });
     }
 
-    return await ctx.db
-      .query("steps")
-      .withIndex("by_lot_and_timestamp", (q) => q.eq("lotId", args.lotId))
-      .order("asc")
-      .collect();
+    return lotSteps;
   },
 });
 
@@ -106,8 +96,42 @@ export const add = mutation({
       });
     }
 
-    const allowedStepTypes = ROLE_STEP_PERMISSIONS[appUser.role] ?? [];
-    if (!allowedStepTypes.includes(args.type)) {
+    const existingSteps = await ctx.db
+      .query("steps")
+      .withIndex("by_lot_and_timestamp", (q) => q.eq("lotId", args.lotId))
+      .order("asc")
+      .collect();
+    const existingTypes = existingSteps.map((s) => s.type);
+
+    if (!canAccessLot(appUser, lot, existingSteps)) {
+      throw new ConvexError({
+        code: "FORBIDDEN",
+        message: "You do not have permission to add steps to this lot",
+      });
+    }
+
+    const nextRequired = getNextStepType(existingTypes);
+    if (lot.status === "complete" || nextRequired == null) {
+      throw new ConvexError({
+        code: WORKFLOW_ERROR_CODES.LOT_COMPLETE,
+        message: "Workflow is complete. No further steps can be added.",
+      });
+    }
+
+    if (existingTypes.includes(args.type)) {
+      throw new ConvexError({
+        code: WORKFLOW_ERROR_CODES.STEP_ALREADY_COMPLETED,
+        message: `Step type '${args.type}' has already been added to this lot`,
+      });
+    }
+    if (args.type !== nextRequired) {
+      throw new ConvexError({
+        code: WORKFLOW_ERROR_CODES.INVALID_NEXT_STEP,
+        message: `Step type '${args.type}' cannot be added yet. Expected next: '${nextRequired ?? "none"}'`,
+      });
+    }
+
+    if (!isRoleAllowedForStep(appUser.role, args.type)) {
       throw new ConvexError({
         code: "FORBIDDEN",
         message: `Role '${appUser.role}' is not authorized to add step type '${args.type}'`,
@@ -126,19 +150,20 @@ export const add = mutation({
       timestamp: now,
     });
 
-    let newStatus = lot.status;
-
-    if (lot.status === "created") {
+    const newTypes = [...existingTypes, args.type];
+    const nextStep = getNextStepType(newTypes);
+    let newStatus: "created" | "in_progress" | "complete" = lot.status;
+    if (args.type === "retail") {
+      newStatus = "complete";
+    } else if (lot.status === "created") {
       newStatus = "in_progress";
     }
 
-    if (args.type === "retail") {
-      newStatus = "complete";
-    }
-
-    if (newStatus !== lot.status) {
-      await ctx.db.patch(args.lotId, { status: newStatus, updatedAt: now });
-    }
+    await ctx.db.patch(args.lotId, {
+      status: newStatus,
+      nextRequiredStep: nextStep ?? null,
+      updatedAt: now,
+    });
 
     return stepId;
   },

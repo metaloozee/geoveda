@@ -11,6 +11,7 @@ import { DataTable } from "@/components/ui/data-table";
 interface LotsDataTableProps {
   lots: Doc<"lots">[] | undefined;
   isPending: boolean;
+  canCreateLot?: boolean;
   onCreateLot?: () => void;
 }
 
@@ -29,6 +30,7 @@ const formatStatus = (status: string) =>
 export function LotsDataTable({
   lots,
   isPending,
+  canCreateLot = false,
   onCreateLot,
 }: LotsDataTableProps) {
   if (isPending) {
@@ -48,18 +50,21 @@ export function LotsDataTable({
         <div className="space-y-1 text-center">
           <p className="font-medium text-sm">No lots yet</p>
           <p className="text-muted-foreground text-sm">
-            Create your first lot to begin traceability tracking.
+            {canCreateLot
+              ? "Create your first lot to begin traceability tracking."
+              : "Contact an admin or farmer to create lots."}
           </p>
         </div>
-        {onCreateLot ? (
-          <Button onClick={onCreateLot} size="sm" variant="outline">
-            Create Lot
-          </Button>
-        ) : (
-          <Button asChild size="sm" variant="outline">
-            <Link href={"/lots/new" as never}>Create Lot</Link>
-          </Button>
-        )}
+        {canCreateLot &&
+          (onCreateLot ? (
+            <Button onClick={onCreateLot} size="sm" variant="outline">
+              Create Lot
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="outline">
+              <Link href={"/lots" as never}>Go to Lots</Link>
+            </Button>
+          ))}
       </div>
     );
   }
