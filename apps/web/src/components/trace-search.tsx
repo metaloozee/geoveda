@@ -81,7 +81,7 @@ export function TraceSearch() {
           onClick={() => setShowScanner(true)}
           variant="outline"
         >
-          <Camera className="mr-2 h-4 w-4" />
+          <Camera className="h-4 w-4" />
           Scan QR Code
         </Button>
       )}

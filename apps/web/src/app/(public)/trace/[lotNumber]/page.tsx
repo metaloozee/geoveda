@@ -83,7 +83,7 @@ export default function TracePage() {
         </div>
         <Button asChild size="sm" variant="outline">
           <Link href="/">
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to search
           </Link>
         </Button>
@@ -108,7 +108,7 @@ export default function TracePage() {
         variant="ghost"
       >
         <Link href="/">
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Link>
       </Button>

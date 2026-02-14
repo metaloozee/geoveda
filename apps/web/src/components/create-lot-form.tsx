@@ -58,7 +58,7 @@ function CreateLotFormInner() {
           variant="ghost"
         >
           <Link href={"/lots" as never}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to Lots
           </Link>
         </Button>
@@ -166,7 +166,7 @@ function CreateLotFormInner() {
                 >
                   {isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       Creating…
                     </>
                   ) : (

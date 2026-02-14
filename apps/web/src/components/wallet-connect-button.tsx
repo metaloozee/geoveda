@@ -84,12 +84,12 @@ export function WalletConnectButton() {
         >
           {isSigningIn ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Signing In...
             </>
           ) : (
             <>
-              <Wallet className="mr-2 h-4 w-4" />
+              <Wallet className="h-4 w-4" />
               Sign In with Ethereum
             </>
           )}
@@ -111,9 +111,9 @@ export function WalletConnectButton() {
         variant="outline"
       >
         {isConnecting ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
-          <Wallet className="mr-2 h-4 w-4" />
+          <Wallet className="h-4 w-4" />
         )}
         Connect Wallet
       </Button>
