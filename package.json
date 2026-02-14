@@ -39,7 +39,7 @@
     "@types/node": "^25.2.1",
     "husky": "latest",
     "lint-staged": "latest",
-    "turbo": "^2.6.3",
+    "turbo": "^2.8.8",
     "typescript": "catalog:",
     "ultracite": "7.1.4"
   },
