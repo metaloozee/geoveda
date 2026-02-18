@@ -21,8 +21,8 @@ export default function Home() {
             <span className="text-primary">entire journey</span>
           </h1>
           <p className="mx-auto max-w-lg text-lg text-muted-foreground">
-            Blockchain-backed traceability for agricultural supply chains. From
-            seed to shelf, every step verified.
+            Traceability for agricultural supply chains on Convex with
+            progressive on-chain anchoring on Base Sepolia.
           </p>
         </div>
 
@@ -56,10 +56,10 @@ export default function Home() {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
             <Shield className="h-5 w-5 text-primary" />
           </div>
-          <h3 className="font-semibold">Tamper-proof</h3>
+          <h3 className="font-semibold">Tamper-resistant</h3>
           <p className="text-muted-foreground text-sm">
-            Append-only records anchored to the blockchain. Once logged, data
-            cannot be altered.
+            Append-only records with verifiable anchors. Anchored steps are
+            linked to Base Sepolia transaction proofs.
           </p>
         </div>
       </section>

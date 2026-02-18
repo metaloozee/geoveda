@@ -5,6 +5,28 @@ Phase 5 of GeoVeda focuses on establishing a "Root of Trust" by anchoring tracea
 
 By storing only cryptographic hashes, GeoVeda maintains high performance and data privacy while benefiting from the immutable security of public blockchains.
 
+## Base Docs MCP (Required Reference)
+Use the `base-docs` MCP server as the canonical source for Base and Base Sepolia implementation details (network config, wallet patterns, contract/event guidance, and tooling updates).
+
+### Install in Cursor
+1. Open Cursor MCP settings and add the Base docs server.
+2. Ensure `.cursor/mcp.json` contains:
+
+```json
+{
+  "mcpServers": {
+    "base-docs": {
+      "url": "https://docs.base.org/mcp"
+    }
+  }
+}
+```
+
+### Verify installation
+- Confirm the MCP server is available in your tool list as `base-docs`.
+- Run a test query against the server before implementation work.
+- Prefer MCP results over static docs when the two differ.
+
 ## Data Hashing
 To ensure consistency, data must be normalized before hashing.
 
@@ -14,47 +36,86 @@ To ensure consistency, data must be normalized before hashing.
 
 ### Data Normalization
 A Step's hash is calculated based on the following fields:
-- `id`: The unique identifier of the step.
-- `productId`: Reference to the product.
+- `stepId`: Deterministic step intent key.
+- `lotId`: Reference to the lot.
 - `actorId`: Reference to the entity performing the action.
-- `timestamp`: UTC ISO string.
-- `location`: Geo-coordinates or facility ID.
-- `payload`: The specific data for that step (e.g., temperature, weight).
+- `actorWalletAddress`: Authenticated SIWE wallet.
+- `actorRole`: Application role used for workflow authorization.
+- `timestamp`: Unix timestamp in milliseconds.
+- `type`, `title`, `description`: Step content fields.
+- `version`: Hash payload format version.
 
 **Normalization Process**:
 1. Sort all keys alphabetically.
-2. Remove any transient fields (e.g., `_id`, `_creationTime` from Convex).
-3. Stringify to JSON.
-4. Hash the resulting string.
+2. Lowercase wallet addresses.
+3. Remove empty optional fields.
+4. Stringify to JSON.
+5. Hash the resulting string.
 
 ```typescript
-import { keccak256, encodePacked } from "viem";
+import { hashAnchorPayload, makeStepIntentKey } from "@geoveda/anchoring";
 
-const normalizedData = JSON.stringify(sortKeys(stepData));
-const stepHash = keccak256(encodePacked(["string"], [normalizedData]));
+const stepKey = makeStepIntentKey({
+  lotId,
+  type,
+  actorWalletAddress,
+  timestamp,
+});
+
+const dataHash = hashAnchorPayload({
+  version: "1",
+  stepId: stepKey,
+  lotId,
+  actorId,
+  actorWalletAddress,
+  actorRole,
+  timestamp,
+  type,
+  title,
+  description,
+});
 ```
 
 ## Anchoring Flow
-The anchoring process follows a strictly defined sequence to ensure data consistency between Convex and the blockchain.
+The anchoring process follows a strict verify-then-persist sequence.
 
-1. **Step Creation**: A new traceability step is recorded in Convex.
-2. **Hash Generation**: The backend calculates the Keccak-256 hash of the normalized step data.
-3. **Transaction Execution**:
-   - A transaction is sent to the Ethereum network (or a supported Layer 2).
-   - The `stepHash` is included in the `data` (input) field of the transaction.
-   - The transaction is typically sent to a "null" address or a dedicated GeoVeda Registry contract.
-4. **Anchoring Update**:
-   - Once the transaction is mined, the `txHash` and `blockNumber` are returned.
-   - The Step record in Convex is updated with these anchoring details.
+1. **Prepare Anchor Payload**: Frontend computes `stepKey` and `dataHash` from canonical payload.
+2. **User Wallet Transaction**:
+   - User submits `AnchorRegistry.anchorStep(dataHash, stepKey, actor)` on Base Sepolia.
+   - Contract emits `Anchored(bytes32 dataHash, bytes32 stepKey, address actor, uint256 timestamp)`.
+3. **Backend Verification Action**:
+   - Convex action fetches transaction receipt/logs from Base Sepolia RPC.
+   - Validates contract address, event signature, sender wallet, and hash values.
+4. **Persist Step + Anchor**:
+   - Only after verification succeeds, backend inserts the Step and matching Anchor record.
+   - If verification fails, no Step is created.
 
 ## Verification
 Any stakeholder can verify the integrity of a Step by following these steps:
 
-1. **Recalculate**: Fetch the Step data from Convex and recalculate the Keccak-256 hash using the standard normalization rules.
-2. **Fetch On-Chain Proof**: Use the `txHash` stored in the Step record to retrieve the transaction from the blockchain via a provider (e.g., Infura, Alchemy).
-3. **Compare**: Extract the data from the on-chain transaction and verify it matches the recalculated hash.
+1. **Recalculate**: Fetch Step data from Convex and recalculate `dataHash` using shared canonical normalization.
+2. **Fetch On-Chain Proof**: Use `txHash` to retrieve receipt/logs from Base Sepolia.
+3. **Compare**: Confirm `Anchored` event fields (`dataHash`, `stepKey`, `actor`) match backend records.
 
-If the hashes match, the data is guaranteed to be identical to what was anchored at the recorded `blockNumber`.
+If values match, the step is anchored and verifiable against the recorded `blockNumber`.
+
+## Required Environment Variables
+
+### Web (`apps/web/.env`)
+- `NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL`
+- `NEXT_PUBLIC_BASE_SEPOLIA_CHAIN_ID` (default: `84532`)
+- `NEXT_PUBLIC_BASE_SEPOLIA_EXPLORER_URL` (default: `https://sepolia.basescan.org`)
+- `NEXT_PUBLIC_ANCHOR_REGISTRY_CONTRACT_ADDRESS`
+
+### Backend (`packages/backend/.env.local`)
+- `BASE_SEPOLIA_RPC_URL`
+- `ANCHOR_REGISTRY_CONTRACT_ADDRESS`
+
+### Contracts (`packages/contracts/.env`)
+- `BASE_SEPOLIA_RPC_URL`
+- `DEPLOYER_PRIVATE_KEY`
+- `BASESCAN_API_KEY`
+- `ANCHOR_REGISTRY_CONTRACT_ADDRESS`
 
 ## Security
 - **Immutability**: The Ethereum blockchain's consensus mechanism ensures that once a transaction is confirmed, it cannot be altered.

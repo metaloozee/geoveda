@@ -5,6 +5,11 @@ process.env.ADMIN_WALLET_ADDRESSES =
   process.env.ADMIN_WALLET_ADDRESSES ?? "0xseedadmin";
 process.env.CONVEX_TEST_USE_IDENTITY_WALLET =
   process.env.CONVEX_TEST_USE_IDENTITY_WALLET ?? "true";
+process.env.CONVEX_TEST_SKIP_ANCHOR_RPC =
+  process.env.CONVEX_TEST_SKIP_ANCHOR_RPC ?? "true";
+process.env.ANCHOR_REGISTRY_CONTRACT_ADDRESS =
+  process.env.ANCHOR_REGISTRY_CONTRACT_ADDRESS ??
+  "0x1111111111111111111111111111111111111111";
 
 const noisyConvexWarning =
   "Convex functions should not directly call other Convex functions.";

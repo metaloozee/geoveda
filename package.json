@@ -29,6 +29,11 @@
     "dev:setup": "turbo -F @geoveda/backend dev:setup",
     "check": "ultracite check",
     "fix": "ultracite fix",
+    "contracts:build": "turbo -F @geoveda/contracts build",
+    "contracts:test": "turbo -F @geoveda/contracts test",
+    "contracts:fmt:check": "turbo -F @geoveda/contracts fmt:check",
+    "contracts:deploy:base-sepolia": "turbo -F @geoveda/contracts deploy:base-sepolia",
+    "contracts:verify:base-sepolia": "turbo -F @geoveda/contracts verify:base-sepolia",
     "prepare": "husky"
   },
   "dependencies": {

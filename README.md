@@ -63,3 +63,10 @@ geoveda/
 - `bun run dev:web`: Start only the web application
 - `bun run dev:setup`: Setup and configure your Convex project
 - `bun run check-types`: Check TypeScript types across all apps
+
+## Anchoring PR Checklist
+
+- [ ] Base behavior validated against `base-docs` MCP responses
+- [ ] `bun run contracts:build` passes
+- [ ] `bun run contracts:test` passes
+- [ ] `bun run contracts:fmt:check` passes

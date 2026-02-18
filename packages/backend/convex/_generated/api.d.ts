@@ -8,6 +8,9 @@
  * @module
  */
 
+import type * as anchors from "../anchors.js";
+import type * as anchorsActions from "../anchorsActions.js";
+import type * as anchorsInternal from "../anchorsInternal.js";
 import type * as auth from "../auth.js";
 import type * as healthCheck from "../healthCheck.js";
 import type * as http from "../http.js";
@@ -26,6 +29,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  anchors: typeof anchors;
+  anchorsActions: typeof anchorsActions;
+  anchorsInternal: typeof anchorsInternal;
   auth: typeof auth;
   healthCheck: typeof healthCheck;
   http: typeof http;

@@ -25,6 +25,12 @@ const stepType = v.union(
   v.literal("retail")
 );
 
+const anchorStatus = v.union(
+  v.literal("anchored"),
+  v.literal("verification_failed"),
+  v.literal("legacy_unanchored")
+);
+
 export default defineSchema({
   users: defineTable({
     walletAddress: v.string(),
@@ -52,6 +58,7 @@ export default defineSchema({
     title: v.string(),
     description: v.optional(v.string()),
     actorId: v.id("users"),
+    actorWalletAddress: v.optional(v.string()),
     actorRole: v.string(),
     timestamp: v.number(),
   })
@@ -61,9 +68,19 @@ export default defineSchema({
   anchors: defineTable({
     stepId: v.id("steps"),
     lotId: v.id("lots"),
+    status: anchorStatus,
     txHash: v.string(),
     dataHash: v.string(),
+    stepKey: v.string(),
     chainId: v.number(),
+    blockNumber: v.number(),
+    contractAddress: v.string(),
+    eventName: v.string(),
+    txSender: v.string(),
+    verifiedAt: v.optional(v.number()),
+    verificationError: v.optional(v.string()),
     anchoredAt: v.number(),
-  }).index("by_stepId", ["stepId"]),
+  })
+    .index("by_stepId", ["stepId"])
+    .index("by_lotId", ["lotId"]),
 });

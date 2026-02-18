@@ -1,23 +1,55 @@
 "use client";
 
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@geoveda/backend/convex/_generated/api";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { createSiweMessage } from "viem/siwe";
-import { useAccount, useConnect, useDisconnect, useSignMessage } from "wagmi";
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useSignMessage,
+  useSwitchChain,
+} from "wagmi";
+import { baseSepolia } from "wagmi/chains";
 import { injected } from "wagmi/connectors";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
+
+const ETH_ADDRESS_PATTERN = /0x[a-fA-F0-9]{40}/;
+
+function normalizeWalletAddress(value: string): string {
+  const match = value.match(ETH_ADDRESS_PATTERN);
+  if (!match) {
+    return value.toLowerCase();
+  }
+  return match[0].toLowerCase();
+}
 
 export function WalletConnectButton() {
   const router = useRouter();
   const { address, isConnected, chainId } = useAccount();
   const { connect, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
+  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
   const { signMessageAsync } = useSignMessage();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const session = authClient.useSession();
+  const { data: appUser } = useQuery(convexQuery(api.users.getCurrent, {}));
+  const isOnBaseSepolia = chainId === baseSepolia.id;
+  const isWalletSessionMismatch = useMemo(() => {
+    if (!(session.data && appUser?.walletAddress && address)) {
+      return false;
+    }
+    return (
+      normalizeWalletAddress(appUser.walletAddress) !==
+      normalizeWalletAddress(address)
+    );
+  }, [address, appUser?.walletAddress, session.data]);
 
   const handleConnect = () => {
     connect({ connector: injected() });
@@ -25,6 +57,11 @@ export function WalletConnectButton() {
 
   const handleSignIn = async () => {
     if (!(address && chainId)) {
+      return;
+    }
+
+    if (!isOnBaseSepolia) {
+      toast.error("Switch to Base Sepolia before signing in.");
       return;
     }
 
@@ -47,7 +84,7 @@ export function WalletConnectButton() {
         uri: window.location.origin,
         version: "1",
         nonce,
-        statement: "Sign in to Geoveda",
+        statement: "Sign in to GeoVeda (Base Sepolia)",
       });
 
       // 3. Sign message using Wagmi
@@ -64,7 +101,7 @@ export function WalletConnectButton() {
       }
 
       setIsSigningIn(false);
-      toast.success("Signed in with Ethereum");
+      toast.success("Signed in with Base Sepolia wallet");
       router.push("/dashboard");
     } catch {
       setIsSigningIn(false);
@@ -72,13 +109,39 @@ export function WalletConnectButton() {
     }
   };
 
+  const handleSwitchToBaseSepolia = async () => {
+    try {
+      await switchChainAsync({ chainId: baseSepolia.id });
+      toast.success("Switched to Base Sepolia");
+    } catch {
+      toast.error("Failed to switch network");
+    }
+  };
+
   // If connected but not signed in
   if (isConnected && !session.data) {
     return (
       <div className="flex gap-2">
+        {!isOnBaseSepolia && (
+          <Button
+            data-testid="switch-base-sepolia"
+            disabled={isSwitchingChain}
+            onClick={handleSwitchToBaseSepolia}
+            variant="secondary"
+          >
+            {isSwitchingChain ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Switching...
+              </>
+            ) : (
+              "Switch to Base Sepolia"
+            )}
+          </Button>
+        )}
         <Button
           data-testid="siwe-button"
-          disabled={isSigningIn}
+          disabled={isSigningIn || !isOnBaseSepolia}
           onClick={handleSignIn}
           variant="default"
         >
@@ -90,12 +153,30 @@ export function WalletConnectButton() {
           ) : (
             <>
               <Wallet className="h-4 w-4" />
-              Sign In with Ethereum
+              Sign In with Base
             </>
           )}
         </Button>
         <Button onClick={() => disconnect()} variant="ghost">
           Disconnect
+        </Button>
+      </div>
+    );
+  }
+
+  if (isConnected && session.data && isWalletSessionMismatch) {
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={async () => {
+            await authClient.signOut();
+            disconnect();
+            router.refresh();
+            toast.info("Session reset. Reconnect and sign in again.");
+          }}
+          variant="destructive"
+        >
+          Reset Session
         </Button>
       </div>
     );

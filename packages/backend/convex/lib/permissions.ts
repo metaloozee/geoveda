@@ -23,6 +23,23 @@ interface IdentityLike {
   walletAddress?: string;
 }
 
+const ETH_ADDRESS_PATTERN = /0x[a-fA-F0-9]{40}/;
+
+function normalizeWalletAddress(
+  value: string | null | undefined
+): string | null {
+  if (!(value && typeof value === "string")) {
+    return null;
+  }
+
+  const match = value.match(ETH_ADDRESS_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  return match[0].toLowerCase();
+}
+
 function isAllowIdentityWalletFallbackInTests(): boolean {
   return process.env.CONVEX_TEST_USE_IDENTITY_WALLET === "true";
 }
@@ -39,7 +56,13 @@ function getWalletAddressFromIdentity(
 ): string | null {
   const walletAddress = identity?.walletAddress;
   if (walletAddress && typeof walletAddress === "string") {
-    return walletAddress;
+    const normalizedWalletAddress = normalizeWalletAddress(walletAddress);
+    if (normalizedWalletAddress) {
+      return normalizedWalletAddress;
+    }
+    if (isAllowIdentityWalletFallbackInTests()) {
+      return walletAddress.toLowerCase();
+    }
   }
 
   if (!isAllowIdentityWalletFallbackInTests()) {
@@ -51,7 +74,12 @@ function getWalletAddressFromIdentity(
     return null;
   }
 
-  return fallbackWalletAddress;
+  // Tests use lightweight wallet-like identifiers (e.g. "0xseedadmin")
+  // that are not strict 40-hex Ethereum addresses.
+  return (
+    normalizeWalletAddress(fallbackWalletAddress) ??
+    fallbackWalletAddress.toLowerCase()
+  );
 }
 
 export async function getAuthUser(
@@ -116,7 +144,7 @@ async function extractWalletAddress(
     return null;
   }
 
-  return (account as { accountId?: string }).accountId ?? null;
+  return normalizeWalletAddress((account as { accountId?: string }).accountId);
 }
 
 export async function requireAuth(
@@ -137,10 +165,31 @@ export async function getAppUser(
   ctx: QueryCtx | MutationCtx,
   walletAddress: string
 ): Promise<Doc<"users"> | null> {
-  return await ctx.db
-    .query("users")
-    .withIndex("by_walletAddress", (q) => q.eq("walletAddress", walletAddress))
-    .unique();
+  const normalized =
+    normalizeWalletAddress(walletAddress) ?? walletAddress.toLowerCase();
+  const candidates = Array.from(
+    new Set([
+      walletAddress,
+      walletAddress.toLowerCase(),
+      normalized,
+      `${normalized}:1`,
+      `${normalized}:84532`,
+      `eip155:1:${normalized}`,
+      `eip155:84532:${normalized}`,
+    ])
+  );
+
+  for (const candidate of candidates) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_walletAddress", (q) => q.eq("walletAddress", candidate))
+      .unique();
+    if (user) {
+      return user;
+    }
+  }
+
+  return null;
 }
 
 export async function requireRole(
@@ -204,5 +253,5 @@ export async function requireAuthWithWallet(
     });
   }
 
-  return { authUser, walletAddress };
+  return { authUser, walletAddress: walletAddress.toLowerCase() };
 }

@@ -25,6 +25,9 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: "geoveda",
   description: "geoveda",
+  other: {
+    "base:app_id": "6995e9d125337829d86a545d",
+  },
 };
 
 export default async function RootLayout({

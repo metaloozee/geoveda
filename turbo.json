@@ -17,6 +17,15 @@
       "dependsOn": ["^test"],
       "inputs": ["$TURBO_DEFAULT$", ".env*", "src/**", "tests/**"]
     },
+    "fmt:check": {
+      "dependsOn": ["^fmt:check"]
+    },
+    "deploy:base-sepolia": {
+      "cache": false
+    },
+    "verify:base-sepolia": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

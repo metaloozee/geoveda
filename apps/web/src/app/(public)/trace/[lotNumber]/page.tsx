@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { AnchorStatusBadge } from "@/components/anchor-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +30,14 @@ interface TimelineStep {
   title: string;
   description?: string;
   actorRole: string;
+  actorWalletAddress?: string;
   timestamp: number;
+  anchor: {
+    status: "anchored" | "verification_failed" | "legacy_unanchored";
+    txHash: string;
+    chainId: number;
+    blockNumber: number;
+  } | null;
 }
 
 const STEP_ICONS: Record<string, typeof Sprout> = {
@@ -191,6 +199,7 @@ export default function TracePage() {
                       {step.description}
                     </p>
                   )}
+                  <AnchorStatusBadge anchor={step.anchor} />
                   <p className="text-muted-foreground text-xs">
                     By{" "}
                     <span className="font-medium text-foreground capitalize">

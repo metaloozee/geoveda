@@ -1,31 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { api } from "../convex/_generated/api";
 import { createBackendTest } from "./harness";
+import { addAnchoredStep } from "./helpers/anchoring";
 import { asWallet, ensureUser, ensureUserWithRole } from "./helpers/auth";
 
 describe("workflow integration", () => {
   it("progresses workflow across roles and updates next step", async () => {
     const t = createBackendTest();
     await ensureUser(t, "0xseedadmin", "Admin");
-    await ensureUserWithRole(t, {
+    const farmerId = await ensureUserWithRole(t, {
       adminWallet: "0xseedadmin",
       walletAddress: "0xfarmer",
       role: "farmer",
       name: "Farmer",
     });
-    await ensureUserWithRole(t, {
+    const processorId = await ensureUserWithRole(t, {
       adminWallet: "0xseedadmin",
       walletAddress: "0xprocessor",
       role: "processor",
       name: "Processor",
     });
-    await ensureUserWithRole(t, {
+    const distributorId = await ensureUserWithRole(t, {
       adminWallet: "0xseedadmin",
       walletAddress: "0xdistributor",
       role: "distributor",
       name: "Distributor",
     });
-    await ensureUserWithRole(t, {
+    const retailerId = await ensureUserWithRole(t, {
       adminWallet: "0xseedadmin",
       walletAddress: "0xretailer",
       role: "retailer",
@@ -37,31 +38,46 @@ describe("workflow integration", () => {
       productName: "Spice Mix",
     });
 
-    await asWallet(t, "0xfarmer").mutation(api.steps.add, {
+    await addAnchoredStep(t, {
+      actorId: farmerId,
+      actorRole: "farmer",
+      walletAddress: "0xfarmer",
       description: "Harvest",
       lotId,
       title: "Harvest",
       type: "harvest",
     });
-    await asWallet(t, "0xprocessor").mutation(api.steps.add, {
+    await addAnchoredStep(t, {
+      actorId: processorId,
+      actorRole: "processor",
+      walletAddress: "0xprocessor",
       description: "Process",
       lotId,
       title: "Process",
       type: "process",
     });
-    await asWallet(t, "0xprocessor").mutation(api.steps.add, {
+    await addAnchoredStep(t, {
+      actorId: processorId,
+      actorRole: "processor",
+      walletAddress: "0xprocessor",
       description: "QC",
       lotId,
       title: "Quality check",
       type: "quality_check",
     });
-    await asWallet(t, "0xdistributor").mutation(api.steps.add, {
+    await addAnchoredStep(t, {
+      actorId: distributorId,
+      actorRole: "distributor",
+      walletAddress: "0xdistributor",
       description: "Transport",
       lotId,
       title: "Transport",
       type: "transport",
     });
-    await asWallet(t, "0xretailer").mutation(api.steps.add, {
+    await addAnchoredStep(t, {
+      actorId: retailerId,
+      actorRole: "retailer",
+      walletAddress: "0xretailer",
       description: "Receive",
       lotId,
       title: "Receive",

@@ -30,7 +30,23 @@ const publicStepValidator = v.object({
   title: v.string(),
   description: v.optional(v.string()),
   actorRole: v.string(),
+  actorWalletAddress: v.optional(v.string()),
   timestamp: v.number(),
+  anchor: v.union(
+    v.object({
+      status: v.union(
+        v.literal("anchored"),
+        v.literal("verification_failed"),
+        v.literal("legacy_unanchored")
+      ),
+      txHash: v.string(),
+      chainId: v.number(),
+      blockNumber: v.number(),
+      contractAddress: v.string(),
+      verifiedAt: v.optional(v.number()),
+    }),
+    v.null()
+  ),
 });
 
 const traceResponseValidator = v.object({
@@ -59,13 +75,35 @@ export const getByLotNumber = query({
       .order("asc")
       .collect();
 
-    const timeline = steps.map((step) => ({
-      type: step.type,
-      title: step.title,
-      description: step.description,
-      actorRole: step.actorRole,
-      timestamp: step.timestamp,
-    }));
+    const anchors = await ctx.db
+      .query("anchors")
+      .withIndex("by_lotId", (q) => q.eq("lotId", lot._id))
+      .collect();
+    const anchorByStepId = new Map(
+      anchors.map((anchor) => [anchor.stepId, anchor])
+    );
+
+    const timeline = steps.map((step) => {
+      const anchor = anchorByStepId.get(step._id);
+      return {
+        type: step.type,
+        title: step.title,
+        description: step.description,
+        actorRole: step.actorRole,
+        actorWalletAddress: step.actorWalletAddress,
+        timestamp: step.timestamp,
+        anchor: anchor
+          ? {
+              status: anchor.status,
+              txHash: anchor.txHash,
+              chainId: anchor.chainId,
+              blockNumber: anchor.blockNumber,
+              contractAddress: anchor.contractAddress,
+              verifiedAt: anchor.verifiedAt,
+            }
+          : null,
+      };
+    });
 
     return {
       lot: {

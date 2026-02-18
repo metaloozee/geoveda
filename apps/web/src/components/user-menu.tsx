@@ -67,14 +67,13 @@ export default function UserMenu() {
   };
 
   const handleSignOut = async () => {
-    disconnect(); // Disconnect Wagmi
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          router.push("/dashboard");
-        },
-      },
-    });
+    try {
+      await authClient.signOut();
+    } finally {
+      disconnect();
+      router.push("/");
+      router.refresh();
+    }
   };
 
   return (

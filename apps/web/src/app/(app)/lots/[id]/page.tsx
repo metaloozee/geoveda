@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { AddStepForm } from "@/components/add-step-form";
+import { AnchorStatusBadge } from "@/components/anchor-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -208,6 +209,7 @@ function LotDetailContent({ lotId }: { lotId: Id<"lots"> }) {
                               {step.description}
                             </p>
                           )}
+                          <AnchorStatusBadge anchor={step.anchor} />
                           <p className="text-muted-foreground text-xs">
                             By{" "}
                             <span className="font-medium text-foreground capitalize">
