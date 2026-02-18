@@ -14,9 +14,60 @@ interface BetterAuthUser {
   isAnonymous?: boolean | null;
 }
 
+interface IdentityLike {
+  subject?: string;
+  tokenIdentifier?: string;
+  name?: string;
+  email?: string;
+  emailVerified?: boolean;
+  walletAddress?: string;
+}
+
+const allowIdentityWalletFallbackInTests =
+  process.env.CONVEX_TEST_USE_IDENTITY_WALLET === "true";
+
+function asIdentityLike(value: unknown): IdentityLike | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  return value as IdentityLike;
+}
+
+function getWalletAddressFromIdentity(
+  identity: IdentityLike | null
+): string | null {
+  const walletAddress = identity?.walletAddress;
+  if (walletAddress && typeof walletAddress === "string") {
+    return walletAddress;
+  }
+
+  if (!allowIdentityWalletFallbackInTests) {
+    return null;
+  }
+
+  const fallbackWalletAddress = identity?.tokenIdentifier ?? identity?.subject;
+  if (!fallbackWalletAddress || typeof fallbackWalletAddress !== "string") {
+    return null;
+  }
+
+  return fallbackWalletAddress;
+}
+
 export async function getAuthUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<BetterAuthUser | null> {
+  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
+  if (identity) {
+    const userId = identity.subject ?? identity.tokenIdentifier ?? "test-user";
+    return {
+      _id: userId,
+      name: identity.name ?? "Test User",
+      email: identity.email ?? "test@example.com",
+      emailVerified: identity.emailVerified ?? true,
+      isAnonymous: false,
+    };
+  }
+
   const authUser = await authComponent.safeGetAuthUser(ctx);
   if (!authUser) {
     return null;
@@ -28,6 +79,12 @@ async function extractWalletAddress(
   ctx: QueryCtx | MutationCtx,
   authUserId: string
 ): Promise<string | null> {
+  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
+  const identityWalletAddress = getWalletAddressFromIdentity(identity);
+  if (identityWalletAddress) {
+    return identityWalletAddress;
+  }
+
   const account = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "account",
     where: [

@@ -19,6 +19,9 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "test": "turbo test",
+    "test:web": "turbo -F web test",
+    "test:backend": "turbo -F @geoveda/backend test",
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
