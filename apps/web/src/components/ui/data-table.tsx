@@ -38,6 +38,8 @@ export function DataTable<TData, TValue>({
   className,
   searchPlaceholder,
 }: DataTableProps<TData, TValue>) {
+  "use no memo";
+
   const [globalFilter, setGlobalFilter] = useState("");
 
   const table = useReactTable({

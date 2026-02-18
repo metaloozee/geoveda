@@ -26,9 +26,8 @@ export function WalletConnectButton() {
       return;
     }
 
+    setIsSigningIn(true);
     try {
-      setIsSigningIn(true);
-
       // 1. Get nonce from Better Auth
       const nonceResponse = await authClient.siwe.nonce({
         walletAddress: address,
@@ -62,13 +61,13 @@ export function WalletConnectButton() {
         throw new Error(verifyResponse.error.message ?? "Verification failed");
       }
 
+      setIsSigningIn(false);
       window.location.href = "/dashboard";
 
       toast.success("Signed in with Ethereum");
     } catch {
-      toast.error("Failed to sign in");
-    } finally {
       setIsSigningIn(false);
+      toast.error("Failed to sign in");
     }
   };
 

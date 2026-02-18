@@ -7,7 +7,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Authenticated } from "convex/react";
 import { Loader2, MapPin, Package, PlusIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { LotsDataTable } from "@/components/lots-data-table";
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,12 @@ function LotsContentInner() {
   const { data: user } = useQuery(convexQuery(api.users.getCurrent, {}));
   const { data: lots, isPending } = useQuery(convexQuery(api.lots.list, {}));
   const searchParams = useSearchParams();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const isCreateParamActive = searchParams.get("create") === "1";
+  const [isCreateDialogOpen, setIsCreateDialogOpen] =
+    useState(isCreateParamActive);
   const showCreateLot = user?.role ? canCreateLot(user.role) : false;
-
-  useEffect(() => {
-    if (showCreateLot && searchParams.get("create") === "1") {
-      setIsCreateDialogOpen(true);
-    }
-  }, [showCreateLot, searchParams]);
+  const isDialogOpen =
+    showCreateLot && (isCreateDialogOpen || isCreateParamActive);
   const createLotMutationFn = useConvexMutation(api.lots.create);
   const { mutateAsync: createLot, isPending: isCreatingLot } = useMutation({
     mutationFn: createLotMutationFn,
@@ -79,8 +77,13 @@ function LotsContentInner() {
         </div>
         {showCreateLot && (
           <Dialog
-            onOpenChange={setIsCreateDialogOpen}
-            open={isCreateDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open && isCreateParamActive) {
+                router.replace("/lots" as never);
+              }
+            }}
+            open={isDialogOpen}
           >
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto">
