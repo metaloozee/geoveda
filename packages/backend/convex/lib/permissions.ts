@@ -23,8 +23,9 @@ interface IdentityLike {
   walletAddress?: string;
 }
 
-const allowIdentityWalletFallbackInTests =
-  process.env.CONVEX_TEST_USE_IDENTITY_WALLET === "true";
+function isAllowIdentityWalletFallbackInTests(): boolean {
+  return process.env.CONVEX_TEST_USE_IDENTITY_WALLET === "true";
+}
 
 function asIdentityLike(value: unknown): IdentityLike | null {
   if (!value || typeof value !== "object") {
@@ -41,7 +42,7 @@ function getWalletAddressFromIdentity(
     return walletAddress;
   }
 
-  if (!allowIdentityWalletFallbackInTests) {
+  if (!isAllowIdentityWalletFallbackInTests()) {
     return null;
   }
 
@@ -58,14 +59,23 @@ export async function getAuthUser(
 ): Promise<BetterAuthUser | null> {
   const identity = asIdentityLike(await ctx.auth.getUserIdentity());
   if (identity) {
-    const userId = identity.subject ?? identity.tokenIdentifier ?? "test-user";
-    return {
-      _id: userId,
-      name: identity.name ?? "Test User",
-      email: identity.email ?? "test@example.com",
-      emailVerified: identity.emailVerified ?? true,
-      isAnonymous: false,
-    };
+    const userId = identity.subject ?? identity.tokenIdentifier;
+    const { name, email, emailVerified } = identity;
+    const hasRequiredIdentityFields =
+      typeof userId === "string" &&
+      typeof name === "string" &&
+      typeof email === "string" &&
+      typeof emailVerified === "boolean";
+
+    if (hasRequiredIdentityFields) {
+      return {
+        _id: userId,
+        name,
+        email,
+        emailVerified,
+        isAnonymous: false,
+      };
+    }
   }
 
   const authUser = await authComponent.safeGetAuthUser(ctx);

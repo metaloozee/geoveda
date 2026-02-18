@@ -81,9 +81,10 @@ describe("CreateLotForm", () => {
     render(<CreateLotForm />);
 
     await user.click(screen.getByTestId("create-lot"));
-
-    expect(screen.getByText("Product name is required")).toBeVisible();
-    expect(screen.getByText("Origin is required")).toBeVisible();
+    await waitFor(() => {
+      expect(screen.getByText("Product name is required")).toBeVisible();
+      expect(screen.getByText("Origin is required")).toBeVisible();
+    });
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 });
