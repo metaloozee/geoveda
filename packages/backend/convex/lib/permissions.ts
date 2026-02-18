@@ -55,12 +55,17 @@ function getWalletAddressFromIdentity(
 }
 
 export async function getAuthUser(
-  ctx: QueryCtx | MutationCtx
+  ctx: QueryCtx | MutationCtx,
+  identity?: IdentityLike | null
 ): Promise<BetterAuthUser | null> {
-  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
-  if (identity) {
-    const userId = identity.subject ?? identity.tokenIdentifier;
-    const { name, email, emailVerified } = identity;
+  const resolvedIdentity =
+    identity === undefined
+      ? asIdentityLike(await ctx.auth.getUserIdentity())
+      : identity;
+
+  if (resolvedIdentity) {
+    const userId = resolvedIdentity.subject ?? resolvedIdentity.tokenIdentifier;
+    const { name, email, emailVerified } = resolvedIdentity;
     const hasRequiredIdentityFields =
       typeof userId === "string" &&
       typeof name === "string" &&
@@ -87,10 +92,14 @@ export async function getAuthUser(
 
 async function extractWalletAddress(
   ctx: QueryCtx | MutationCtx,
-  authUserId: string
+  authUserId: string,
+  identity?: IdentityLike | null
 ): Promise<string | null> {
-  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
-  const identityWalletAddress = getWalletAddressFromIdentity(identity);
+  const resolvedIdentity =
+    identity === undefined
+      ? asIdentityLike(await ctx.auth.getUserIdentity())
+      : identity;
+  const identityWalletAddress = getWalletAddressFromIdentity(resolvedIdentity);
   if (identityWalletAddress) {
     return identityWalletAddress;
   }
@@ -111,9 +120,10 @@ async function extractWalletAddress(
 }
 
 export async function requireAuth(
-  ctx: QueryCtx | MutationCtx
+  ctx: QueryCtx | MutationCtx,
+  identity?: IdentityLike | null
 ): Promise<BetterAuthUser> {
-  const authUser = await getAuthUser(ctx);
+  const authUser = await getAuthUser(ctx, identity);
   if (!authUser) {
     throw new ConvexError({
       code: "UNAUTHENTICATED",
@@ -166,12 +176,13 @@ export function requireAdmin(
 export async function getCurrentUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<Doc<"users"> | null> {
-  const authUser = await getAuthUser(ctx);
+  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
+  const authUser = await getAuthUser(ctx, identity);
   if (!authUser) {
     return null;
   }
 
-  const walletAddress = await extractWalletAddress(ctx, authUser._id);
+  const walletAddress = await extractWalletAddress(ctx, authUser._id, identity);
   if (!walletAddress) {
     return null;
   }
@@ -182,8 +193,9 @@ export async function getCurrentUser(
 export async function requireAuthWithWallet(
   ctx: QueryCtx | MutationCtx
 ): Promise<{ authUser: BetterAuthUser; walletAddress: string }> {
-  const authUser = await requireAuth(ctx);
-  const walletAddress = await extractWalletAddress(ctx, authUser._id);
+  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
+  const authUser = await requireAuth(ctx, identity);
+  const walletAddress = await extractWalletAddress(ctx, authUser._id, identity);
 
   if (!walletAddress) {
     throw new ConvexError({

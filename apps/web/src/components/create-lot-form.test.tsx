@@ -87,4 +87,20 @@ describe("CreateLotForm", () => {
     });
     expect(mutateAsync).not.toHaveBeenCalled();
   });
+
+  it("shows error toast and does not redirect when submit fails", async () => {
+    mutateAsync.mockRejectedValue(new Error("Failed to create lot"));
+
+    const user = userEvent.setup();
+    render(<CreateLotForm />);
+
+    await user.type(screen.getByTestId("product-name"), "Arabica Coffee");
+    await user.type(screen.getByTestId("product-origin"), "Coorg");
+    await user.click(screen.getByTestId("create-lot"));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalled();
+    });
+    expect(push).not.toHaveBeenCalled();
+  });
 });
