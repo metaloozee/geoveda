@@ -7,7 +7,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Authenticated } from "convex/react";
 import { Loader2, MapPin, Package, PlusIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { LotsDataTable } from "@/components/lots-data-table";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,13 @@ function LotsContentInner() {
     mutationFn: createLotMutationFn,
   });
 
+  useEffect(() => {
+    if (isCreateParamActive && !showCreateLot) {
+      setIsCreateDialogOpen(false);
+      router.replace("/lots" as never);
+    }
+  }, [isCreateParamActive, router, showCreateLot]);
+
   const form = useForm({
     defaultValues: {
       productName: "",
@@ -53,6 +60,9 @@ function LotsContentInner() {
         });
         toast.success(`Lot ${lotNumber} created successfully`);
         setIsCreateDialogOpen(false);
+        if (isCreateParamActive) {
+          router.replace("/lots" as never);
+        }
         router.push(`/lots/${lotId}` as never);
       } catch {
         toast.error("Failed to create lot. Please try again.");
