@@ -7,7 +7,11 @@
   "author": "",
   "scripts": {
     "dev": "convex dev",
-    "dev:setup": "convex dev --configure --until-success"
+    "dev:setup": "convex dev --configure --until-success",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
@@ -18,8 +22,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@geoveda/config": "workspace:*",
     "@types/node": "^24.3.0",
-    "typescript": "catalog:"
+    "@vitest/coverage-v8": "^4.0.0-beta.12",
+    "convex-test": "^0.0.31",
+    "typescript": "catalog:",
+    "vitest": "^4.0.0-beta.12"
   }
 }

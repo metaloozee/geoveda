@@ -14,9 +14,75 @@ interface BetterAuthUser {
   isAnonymous?: boolean | null;
 }
 
+interface IdentityLike {
+  subject?: string;
+  tokenIdentifier?: string;
+  name?: string;
+  email?: string;
+  emailVerified?: boolean;
+  walletAddress?: string;
+}
+
+function isAllowIdentityWalletFallbackInTests(): boolean {
+  return process.env.CONVEX_TEST_USE_IDENTITY_WALLET === "true";
+}
+
+function asIdentityLike(value: unknown): IdentityLike | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  return value as IdentityLike;
+}
+
+function getWalletAddressFromIdentity(
+  identity: IdentityLike | null
+): string | null {
+  const walletAddress = identity?.walletAddress;
+  if (walletAddress && typeof walletAddress === "string") {
+    return walletAddress;
+  }
+
+  if (!isAllowIdentityWalletFallbackInTests()) {
+    return null;
+  }
+
+  const fallbackWalletAddress = identity?.tokenIdentifier ?? identity?.subject;
+  if (!fallbackWalletAddress || typeof fallbackWalletAddress !== "string") {
+    return null;
+  }
+
+  return fallbackWalletAddress;
+}
+
 export async function getAuthUser(
-  ctx: QueryCtx | MutationCtx
+  ctx: QueryCtx | MutationCtx,
+  identity?: IdentityLike | null
 ): Promise<BetterAuthUser | null> {
+  const resolvedIdentity =
+    identity === undefined
+      ? asIdentityLike(await ctx.auth.getUserIdentity())
+      : identity;
+
+  if (resolvedIdentity) {
+    const userId = resolvedIdentity.subject ?? resolvedIdentity.tokenIdentifier;
+    const { name, email, emailVerified } = resolvedIdentity;
+    const hasRequiredIdentityFields =
+      typeof userId === "string" &&
+      typeof name === "string" &&
+      typeof email === "string" &&
+      typeof emailVerified === "boolean";
+
+    if (hasRequiredIdentityFields) {
+      return {
+        _id: userId,
+        name,
+        email,
+        emailVerified,
+        isAnonymous: false,
+      };
+    }
+  }
+
   const authUser = await authComponent.safeGetAuthUser(ctx);
   if (!authUser) {
     return null;
@@ -26,8 +92,18 @@ export async function getAuthUser(
 
 async function extractWalletAddress(
   ctx: QueryCtx | MutationCtx,
-  authUserId: string
+  authUserId: string,
+  identity?: IdentityLike | null
 ): Promise<string | null> {
+  const resolvedIdentity =
+    identity === undefined
+      ? asIdentityLike(await ctx.auth.getUserIdentity())
+      : identity;
+  const identityWalletAddress = getWalletAddressFromIdentity(resolvedIdentity);
+  if (identityWalletAddress) {
+    return identityWalletAddress;
+  }
+
   const account = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "account",
     where: [
@@ -44,9 +120,10 @@ async function extractWalletAddress(
 }
 
 export async function requireAuth(
-  ctx: QueryCtx | MutationCtx
+  ctx: QueryCtx | MutationCtx,
+  identity?: IdentityLike | null
 ): Promise<BetterAuthUser> {
-  const authUser = await getAuthUser(ctx);
+  const authUser = await getAuthUser(ctx, identity);
   if (!authUser) {
     throw new ConvexError({
       code: "UNAUTHENTICATED",
@@ -99,12 +176,13 @@ export function requireAdmin(
 export async function getCurrentUser(
   ctx: QueryCtx | MutationCtx
 ): Promise<Doc<"users"> | null> {
-  const authUser = await getAuthUser(ctx);
+  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
+  const authUser = await getAuthUser(ctx, identity);
   if (!authUser) {
     return null;
   }
 
-  const walletAddress = await extractWalletAddress(ctx, authUser._id);
+  const walletAddress = await extractWalletAddress(ctx, authUser._id, identity);
   if (!walletAddress) {
     return null;
   }
@@ -115,8 +193,9 @@ export async function getCurrentUser(
 export async function requireAuthWithWallet(
   ctx: QueryCtx | MutationCtx
 ): Promise<{ authUser: BetterAuthUser; walletAddress: string }> {
-  const authUser = await requireAuth(ctx);
-  const walletAddress = await extractWalletAddress(ctx, authUser._id);
+  const identity = asIdentityLike(await ctx.auth.getUserIdentity());
+  const authUser = await requireAuth(ctx, identity);
+  const walletAddress = await extractWalletAddress(ctx, authUser._id, identity);
 
   if (!walletAddress) {
     throw new ConvexError({

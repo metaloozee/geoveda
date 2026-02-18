@@ -12,7 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAccount } from "wagmi";
 import { Badge } from "@/components/ui/badge";
@@ -71,17 +71,13 @@ export default function SettingsPage() {
     mutationFn: ensureUserMutationFn,
   });
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState<string | undefined>(undefined);
 
   const persistedName = appUser?.name ?? "";
   const fallbackName = session?.user?.name ?? "";
   const initialName = persistedName || fallbackName;
-
-  useEffect(() => {
-    setName(initialName);
-  }, [initialName]);
-
-  const normalizedName = name.trim();
+  const nameValue = name ?? initialName;
+  const normalizedName = nameValue.trim();
   const hasNameChanged = normalizedName !== persistedName;
   const isNameValid = normalizedName.length >= 2;
   const canSave =
@@ -193,7 +189,7 @@ export default function SettingsPage() {
                 maxLength={64}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Enter your full name"
-                value={name}
+                value={nameValue}
               />
               {normalizedName.length > 0 && !isNameValid ? (
                 <p className="text-destructive text-xs">
@@ -210,7 +206,7 @@ export default function SettingsPage() {
           <div className="flex flex-wrap items-center gap-2 border-t pt-3">
             <Button
               disabled={isSaving}
-              onClick={() => setName(initialName)}
+              onClick={() => setName(undefined)}
               type="button"
               variant="outline"
             >

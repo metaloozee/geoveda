@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createSiweMessage } from "viem/siwe";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
 export function WalletConnectButton() {
+  const router = useRouter();
   const { address, isConnected, chainId } = useAccount();
   const { connect, isPending: isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
@@ -26,9 +28,8 @@ export function WalletConnectButton() {
       return;
     }
 
+    setIsSigningIn(true);
     try {
-      setIsSigningIn(true);
-
       // 1. Get nonce from Better Auth
       const nonceResponse = await authClient.siwe.nonce({
         walletAddress: address,
@@ -62,13 +63,12 @@ export function WalletConnectButton() {
         throw new Error(verifyResponse.error.message ?? "Verification failed");
       }
 
-      window.location.href = "/dashboard";
-
-      toast.success("Signed in with Ethereum");
-    } catch {
-      toast.error("Failed to sign in");
-    } finally {
       setIsSigningIn(false);
+      toast.success("Signed in with Ethereum");
+      router.push("/dashboard");
+    } catch {
+      setIsSigningIn(false);
+      toast.error("Failed to sign in");
     }
   };
 

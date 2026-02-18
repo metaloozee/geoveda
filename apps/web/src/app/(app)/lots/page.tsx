@@ -29,18 +29,23 @@ function LotsContentInner() {
   const { data: user } = useQuery(convexQuery(api.users.getCurrent, {}));
   const { data: lots, isPending } = useQuery(convexQuery(api.lots.list, {}));
   const searchParams = useSearchParams();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const isCreateParamActive = searchParams.get("create") === "1";
+  const [isCreateDialogOpen, setIsCreateDialogOpen] =
+    useState(isCreateParamActive);
   const showCreateLot = user?.role ? canCreateLot(user.role) : false;
-
-  useEffect(() => {
-    if (showCreateLot && searchParams.get("create") === "1") {
-      setIsCreateDialogOpen(true);
-    }
-  }, [showCreateLot, searchParams]);
+  const isDialogOpen =
+    showCreateLot && (isCreateDialogOpen || isCreateParamActive);
   const createLotMutationFn = useConvexMutation(api.lots.create);
   const { mutateAsync: createLot, isPending: isCreatingLot } = useMutation({
     mutationFn: createLotMutationFn,
   });
+
+  useEffect(() => {
+    if (isCreateParamActive && !showCreateLot) {
+      setIsCreateDialogOpen(false);
+      router.replace("/lots" as never);
+    }
+  }, [isCreateParamActive, router, showCreateLot]);
 
   const form = useForm({
     defaultValues: {
@@ -55,6 +60,9 @@ function LotsContentInner() {
         });
         toast.success(`Lot ${lotNumber} created successfully`);
         setIsCreateDialogOpen(false);
+        if (isCreateParamActive) {
+          router.replace("/lots" as never);
+        }
         router.push(`/lots/${lotId}` as never);
       } catch {
         toast.error("Failed to create lot. Please try again.");
@@ -79,8 +87,13 @@ function LotsContentInner() {
         </div>
         {showCreateLot && (
           <Dialog
-            onOpenChange={setIsCreateDialogOpen}
-            open={isCreateDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open);
+              if (!open && isCreateParamActive) {
+                router.replace("/lots" as never);
+              }
+            }}
+            open={isDialogOpen}
           >
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto">
