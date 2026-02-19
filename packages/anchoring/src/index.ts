@@ -11,4 +11,5 @@ export {
   makeStepIntentKey,
   normalizeAnchorPayload,
 } from "./hash";
-export type { AnchorContractCall, AnchorPayloadV1 } from "./types";
+export type { AnchorContractCall, AnchorPayloadV1, StepType } from "./types";
+export { STEP_VALUES } from "./types";

@@ -14,7 +14,7 @@ contract AnchorRegistry {
 
     mapping(bytes32 => bool) public anchoredStepKeys;
 
-    function anchorStep(bytes32 dataHash, bytes32 stepKey, address actor) external {
+    function anchorStep(bytes32 dataHash, bytes32 stepKey) external {
         if (dataHash == bytes32(0) || stepKey == bytes32(0)) {
             revert ZeroHash();
         }
@@ -23,6 +23,6 @@ contract AnchorRegistry {
         }
 
         anchoredStepKeys[stepKey] = true;
-        emit Anchored(dataHash, stepKey, actor, block.timestamp);
+        emit Anchored(dataHash, stepKey, msg.sender, block.timestamp);
     }
 }

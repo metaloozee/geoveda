@@ -1,22 +1,8 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAppUser, requireAuthWithWallet } from "./lib/permissions";
+import { anchorStatus, stepType } from "./lib/validators";
 import { canAccessLot } from "./lib/workflow";
-
-const stepType = v.union(
-  v.literal("harvest"),
-  v.literal("process"),
-  v.literal("quality_check"),
-  v.literal("transport"),
-  v.literal("receive"),
-  v.literal("retail")
-);
-
-const anchorStatus = v.union(
-  v.literal("anchored"),
-  v.literal("verification_failed"),
-  v.literal("legacy_unanchored")
-);
 
 const stepWithAnchorValidator = v.object({
   _id: v.id("steps"),
@@ -122,7 +108,7 @@ export const add = mutation({
     title: v.string(),
     description: v.optional(v.string()),
   },
-  returns: v.id("steps"),
+  returns: v.null(),
   handler: (_ctx, _args) => {
     throw new ConvexError({
       code: "ANCHORING_REQUIRED",

@@ -1,19 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { anchorStatus, stepType } from "./lib/validators";
 
 const lotStatus = v.union(
   v.literal("created"),
   v.literal("in_progress"),
   v.literal("complete")
-);
-
-const stepType = v.union(
-  v.literal("harvest"),
-  v.literal("process"),
-  v.literal("quality_check"),
-  v.literal("transport"),
-  v.literal("receive"),
-  v.literal("retail")
 );
 
 const publicLotValidator = v.object({
@@ -34,11 +26,7 @@ const publicStepValidator = v.object({
   timestamp: v.number(),
   anchor: v.union(
     v.object({
-      status: v.union(
-        v.literal("anchored"),
-        v.literal("verification_failed"),
-        v.literal("legacy_unanchored")
-      ),
+      status: anchorStatus,
       txHash: v.string(),
       chainId: v.number(),
       blockNumber: v.number(),

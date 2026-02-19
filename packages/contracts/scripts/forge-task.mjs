@@ -17,9 +17,7 @@ const check = spawnSync("forge", ["--version"], {
 const hasForge = check.status === 0;
 
 if (!hasForge) {
-  const message =
-    `Skipping @geoveda/contracts ${taskName}: Foundry \`forge\` is not installed. ` +
-    "Install from https://book.getfoundry.sh/getting-started/installation";
+  const message = `Skipping @geoveda/contracts ${taskName}: Foundry \`forge\` is not installed. Install from https://book.getfoundry.sh/getting-started/installation`;
 
   if (isCi) {
     console.error(`${message}. CI requires contracts checks.`);

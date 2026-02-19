@@ -1,6 +1,13 @@
 "use client";
 
 import { convexQuery } from "@convex-dev/react-query";
+import {
+  ANCHOR_REGISTRY_CONTRACT_ADDRESS,
+  BASE_SEPOLIA_CHAIN_ID,
+  hashAnchorPayload,
+  makeStepIntentKey,
+  type StepType,
+} from "@geoveda/anchoring";
 import { api } from "@geoveda/backend/convex/_generated/api";
 import type { Id } from "@geoveda/backend/convex/_generated/dataModel";
 import { env } from "@geoveda/env/web";
@@ -10,6 +17,7 @@ import { useConvex } from "convex/react";
 import { ConvexError } from "convex/values";
 import { Loader2, Package } from "lucide-react";
 import { toast } from "sonner";
+import type { WaitForTransactionReceiptErrorType } from "viem";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,13 +36,6 @@ import {
   isRoleAllowedForStep,
   WORKFLOW_ERROR_CODES,
 } from "@/lib/workflow";
-import {
-  ANCHOR_REGISTRY_CONTRACT_ADDRESS,
-  anchorRegistryAbi,
-  BASE_SEPOLIA_CHAIN_ID,
-  hashAnchorPayload,
-  makeStepIntentKey,
-} from "../../../../packages/anchoring/src";
 
 interface StepRecord {
   type: string;
@@ -49,6 +50,49 @@ interface AddStepFormProps {
 const formatStepAction = (step: string) =>
   step.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 const ETH_ADDRESS_PATTERN = /0x[a-fA-F0-9]{40}/;
+const TX_RECEIPT_TIMEOUT_MS = 90_000;
+
+const anchorStepAbi = [
+  {
+    type: "function",
+    name: "anchorStep",
+    inputs: [
+      {
+        name: "dataHash",
+        type: "bytes32",
+      },
+      {
+        name: "stepKey",
+        type: "bytes32",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+] as const;
+
+const legacyAnchorStepAbi = [
+  {
+    type: "function",
+    name: "anchorStep",
+    inputs: [
+      {
+        name: "dataHash",
+        type: "bytes32",
+      },
+      {
+        name: "stepKey",
+        type: "bytes32",
+      },
+      {
+        name: "actor",
+        type: "address",
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+] as const;
 
 function normalizeWalletAddress(value: string): string {
   const match = value.match(ETH_ADDRESS_PATTERN);
@@ -99,7 +143,8 @@ export function AddStepForm({ lotId, steps, lotStatus }: AddStepFormProps) {
     }: {
       title: string;
       description?: string;
-      type: string;
+      type: StepType;
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: true
     }) => {
       if (!(address && walletClient && publicClient && user)) {
         throw new Error("Wallet and user session are required");
@@ -145,28 +190,58 @@ export function AddStepForm({ lotId, steps, lotStatus }: AddStepFormProps) {
         timestamp,
       });
 
-      const txHash = await walletClient.writeContract({
-        abi: anchorRegistryAbi,
-        address: contractAddress,
-        functionName: "anchorStep",
-        args: [dataHash, stepKey, sessionWallet as `0x${string}`],
-        account: sessionWallet as `0x${string}`,
-        chain: walletClient.chain,
-      });
+      let txHash: `0x${string}`;
+      try {
+        txHash = await walletClient.writeContract({
+          abi: anchorStepAbi,
+          address: contractAddress,
+          functionName: "anchorStep",
+          args: [dataHash, stepKey],
+          account: sessionWallet as `0x${string}`,
+          chain: walletClient.chain,
+        });
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message.toLowerCase() : "";
+        const shouldRetryLegacy =
+          errorMessage.includes("reverted") ||
+          errorMessage.includes("selector") ||
+          errorMessage.includes("function");
 
-      await publicClient.waitForTransactionReceipt({
-        hash: txHash,
-      });
+        if (!shouldRetryLegacy) {
+          throw error;
+        }
+
+        txHash = await walletClient.writeContract({
+          abi: legacyAnchorStepAbi,
+          address: contractAddress,
+          functionName: "anchorStep",
+          args: [dataHash, stepKey, sessionWallet as `0x${string}`],
+          account: sessionWallet as `0x${string}`,
+          chain: walletClient.chain,
+        });
+      }
+
+      try {
+        await publicClient.waitForTransactionReceipt({
+          hash: txHash,
+          timeout: TX_RECEIPT_TIMEOUT_MS,
+        });
+      } catch (error) {
+        const waitError = error as WaitForTransactionReceiptErrorType;
+        const isTimeout =
+          waitError.name === "WaitForTransactionReceiptTimeoutError";
+        if (isTimeout) {
+          throw new Error(
+            "Transaction confirmation timed out. Please check your wallet/explorer and retry."
+          );
+        }
+        throw new Error("Failed to confirm transaction on Base Sepolia.");
+      }
 
       return await convex.action(api.anchorsActions.verifyAnchorAndCreateStep, {
         lotId,
-        type: type as
-          | "harvest"
-          | "process"
-          | "quality_check"
-          | "transport"
-          | "receive"
-          | "retail",
+        type,
         title,
         description,
         timestamp,

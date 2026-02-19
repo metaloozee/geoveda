@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { anchorStatus, stepType } from "./lib/validators";
 
 const userRole = v.union(
   v.literal("farmer"),
@@ -14,21 +15,6 @@ const lotStatus = v.union(
   v.literal("created"),
   v.literal("in_progress"),
   v.literal("complete")
-);
-
-const stepType = v.union(
-  v.literal("harvest"),
-  v.literal("process"),
-  v.literal("quality_check"),
-  v.literal("transport"),
-  v.literal("receive"),
-  v.literal("retail")
-);
-
-const anchorStatus = v.union(
-  v.literal("anchored"),
-  v.literal("verification_failed"),
-  v.literal("legacy_unanchored")
 );
 
 export default defineSchema({

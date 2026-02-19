@@ -1,3 +1,5 @@
+import type { Abi } from "viem";
+
 export const anchorRegistryAbi = [
   {
     type: "event",
@@ -7,21 +9,25 @@ export const anchorRegistryAbi = [
         indexed: true,
         name: "dataHash",
         type: "bytes32",
+        internalType: "bytes32",
       },
       {
         indexed: true,
         name: "stepKey",
         type: "bytes32",
+        internalType: "bytes32",
       },
       {
         indexed: true,
         name: "actor",
         type: "address",
+        internalType: "address",
       },
       {
         indexed: false,
         name: "timestamp",
         type: "uint256",
+        internalType: "uint256",
       },
     ],
     anonymous: false,
@@ -40,13 +46,8 @@ export const anchorRegistryAbi = [
         type: "bytes32",
         internalType: "bytes32",
       },
-      {
-        name: "actor",
-        type: "address",
-        internalType: "address",
-      },
     ],
     outputs: [],
     stateMutability: "nonpayable",
   },
-] as const;
+] as const satisfies Abi;

@@ -2,13 +2,7 @@
 
 import { env } from "@geoveda/env/web";
 import { Badge } from "@/components/ui/badge";
-
-interface AnchorInfo {
-  status: "anchored" | "verification_failed" | "legacy_unanchored";
-  txHash: string;
-  chainId: number;
-  blockNumber: number;
-}
+import type { AnchorInfo } from "@/lib/anchor-types";
 
 export function AnchorStatusBadge({ anchor }: { anchor: AnchorInfo | null }) {
   if (!anchor) {

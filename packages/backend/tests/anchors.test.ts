@@ -1,6 +1,6 @@
+import { hashAnchorPayload, makeStepIntentKey } from "@geoveda/anchoring";
 import { ConvexError } from "convex/values";
 import { describe, expect, it } from "vitest";
-import { hashAnchorPayload, makeStepIntentKey } from "../../anchoring/src";
 import { api } from "../convex/_generated/api";
 import { createBackendTest } from "./harness";
 import { asWallet, ensureUser, ensureUserWithRole } from "./helpers/auth";

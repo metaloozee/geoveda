@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { ETH_ADDRESS_REGEX } from "./constants";
 
 const backendEnvSchema = z.object({
   BASE_SEPOLIA_RPC_URL: z.url().optional(),
   ANCHOR_REGISTRY_CONTRACT_ADDRESS: z
     .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/)
+    .regex(ETH_ADDRESS_REGEX)
     .optional(),
 });
 

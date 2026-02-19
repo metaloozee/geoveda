@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
+    "@geoveda/anchoring": "workspace:*",
     "@geoveda/env": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",

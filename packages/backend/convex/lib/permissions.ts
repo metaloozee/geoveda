@@ -167,29 +167,11 @@ export async function getAppUser(
 ): Promise<Doc<"users"> | null> {
   const normalized =
     normalizeWalletAddress(walletAddress) ?? walletAddress.toLowerCase();
-  const candidates = Array.from(
-    new Set([
-      walletAddress,
-      walletAddress.toLowerCase(),
-      normalized,
-      `${normalized}:1`,
-      `${normalized}:84532`,
-      `eip155:1:${normalized}`,
-      `eip155:84532:${normalized}`,
-    ])
-  );
 
-  for (const candidate of candidates) {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_walletAddress", (q) => q.eq("walletAddress", candidate))
-      .unique();
-    if (user) {
-      return user;
-    }
-  }
-
-  return null;
+  return await ctx.db
+    .query("users")
+    .withIndex("by_walletAddress", (q) => q.eq("walletAddress", normalized))
+    .unique();
 }
 
 export async function requireRole(

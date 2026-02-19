@@ -1,4 +1,4 @@
-import { encodePacked, keccak256, stringToHex } from "viem";
+import { encodePacked, keccak256 } from "viem";
 import type { AnchorPayloadV1 } from "./types";
 
 function sortKeysDeep(value: unknown): unknown {
@@ -42,7 +42,7 @@ export function hashAnchorPayload(payload: AnchorPayloadV1): `0x${string}` {
 }
 
 export function hashStepKey(stepId: string): `0x${string}` {
-  return keccak256(stringToHex(stepId));
+  return keccak256(encodePacked(["string"], [stepId]));
 }
 
 export function makeStepIntentKey(input: {
@@ -52,5 +52,5 @@ export function makeStepIntentKey(input: {
   timestamp: number;
 }): `0x${string}` {
   const raw = `${input.lotId}:${input.type}:${input.actorWalletAddress.toLowerCase()}:${input.timestamp}`;
-  return keccak256(stringToHex(raw));
+  return keccak256(encodePacked(["string"], [raw]));
 }

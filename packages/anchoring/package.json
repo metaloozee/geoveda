@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./abi": "./src/abi/anchorRegistryAbi.ts"
+    "./abi": "./src/abi/anchor-registry-abi.ts"
   },
   "dependencies": {
     "viem": "^2.45.1"

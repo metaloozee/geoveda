@@ -17,6 +17,8 @@ Solidity contracts and deployment automation for GeoVeda anchoring.
 - Deploy (Base Sepolia): `bun run deploy:base-sepolia`
 - Verify (Base Sepolia): `bun run verify:base-sepolia`
 
+Before deploy/verify, export `BASE_SEPOLIA_RPC_URL` in your environment.
+
 ## Deployment Metadata
 
 After deployment and verification, update `deployments/base-sepolia.json` with:

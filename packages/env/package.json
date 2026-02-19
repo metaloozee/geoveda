@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     "./web": "./src/web.ts",
-    "./backend": "./src/backend.ts"
+    "./backend": "./src/backend.ts",
+    "./constants": "./src/constants.ts"
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.1",

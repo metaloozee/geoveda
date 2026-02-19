@@ -1,11 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-
-const anchorStatus = v.union(
-  v.literal("anchored"),
-  v.literal("verification_failed"),
-  v.literal("legacy_unanchored")
-);
+import { anchorStatus } from "./lib/validators";
 
 const anchorValidator = v.object({
   _id: v.id("anchors"),

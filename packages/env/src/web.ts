@@ -1,5 +1,6 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
+import { ETH_ADDRESS_REGEX } from "./constants";
 
 export const env = createEnv({
   client: {
@@ -12,7 +13,7 @@ export const env = createEnv({
       .default("https://sepolia.basescan.org"),
     NEXT_PUBLIC_ANCHOR_REGISTRY_CONTRACT_ADDRESS: z
       .string()
-      .regex(/^0x[a-fA-F0-9]{40}$/)
+      .regex(ETH_ADDRESS_REGEX)
       .optional(),
   },
   runtimeEnv: {

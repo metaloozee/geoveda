@@ -15,7 +15,7 @@
 
 ## Base Sepolia Deployment
 
-1. Ensure `BASE_SEPOLIA_RPC_URL` and `DEPLOYER_PRIVATE_KEY` are set.
+1. Ensure `BASE_SEPOLIA_RPC_URL` and `DEPLOYER_PRIVATE_KEY` are set and exported in your shell environment.
 2. Run `bun run contracts:build`.
 3. Run `bun run contracts:test`.
 4. Run `bun run contracts:deploy:base-sepolia`.

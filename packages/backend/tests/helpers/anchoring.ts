@@ -1,16 +1,12 @@
-import { hashAnchorPayload, makeStepIntentKey } from "../../../anchoring/src";
+import {
+  hashAnchorPayload,
+  makeStepIntentKey,
+  type StepType,
+} from "@geoveda/anchoring";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { BackendTest } from "../harness";
 import { asWallet } from "./auth";
-
-type StepType =
-  | "harvest"
-  | "process"
-  | "quality_check"
-  | "transport"
-  | "receive"
-  | "retail";
 
 export async function addAnchoredStep(
   t: BackendTest,

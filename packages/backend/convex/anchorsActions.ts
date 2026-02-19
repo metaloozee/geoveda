@@ -1,6 +1,3 @@
-import { env } from "@geoveda/env/backend";
-import { ConvexError, v } from "convex/values";
-import { createPublicClient, decodeEventLog, http } from "viem";
 import {
   ANCHOR_EVENT_NAME,
   ANCHOR_REGISTRY_CONTRACT_ADDRESS,
@@ -8,19 +5,14 @@ import {
   BASE_SEPOLIA_CHAIN_ID,
   hashAnchorPayload,
   makeStepIntentKey,
-} from "../../anchoring/src";
+} from "@geoveda/anchoring";
+import { env } from "@geoveda/env/backend";
+import { ConvexError, v } from "convex/values";
+import { createPublicClient, decodeEventLog, http } from "viem";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action } from "./_generated/server";
-
-const stepType = v.union(
-  v.literal("harvest"),
-  v.literal("process"),
-  v.literal("quality_check"),
-  v.literal("transport"),
-  v.literal("receive"),
-  v.literal("retail")
-);
+import { stepType } from "./lib/validators";
 
 export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
   args: {
@@ -46,9 +38,15 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
     }
 
     const actorWalletAddress = appUser.walletAddress.toLowerCase();
-    const configuredContractAddress = (env.ANCHOR_REGISTRY_CONTRACT_ADDRESS ||
-      ANCHOR_REGISTRY_CONTRACT_ADDRESS ||
-      args.contractAddress) as `0x${string}`;
+    const configuredContractAddress =
+      env.ANCHOR_REGISTRY_CONTRACT_ADDRESS || ANCHOR_REGISTRY_CONTRACT_ADDRESS;
+    if (!configuredContractAddress) {
+      throw new ConvexError({
+        code: "MISSING_CONTRACT_ADDRESS",
+        message:
+          "ANCHOR_REGISTRY_CONTRACT_ADDRESS must be configured on the server.",
+      });
+    }
 
     if (args.chainId !== BASE_SEPOLIA_CHAIN_ID) {
       throw new ConvexError({

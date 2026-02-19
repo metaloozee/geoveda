@@ -1,21 +1,13 @@
+import { ANCHOR_EVENT_NAME } from "@geoveda/anchoring";
 import { ConvexError, v } from "convex/values";
-import { ANCHOR_EVENT_NAME } from "../../anchoring/src";
 import { internalMutation } from "./_generated/server";
+import { stepType } from "./lib/validators";
 import {
   canAccessLot,
   getNextStepType,
   isRoleAllowedForStep,
   WORKFLOW_ERROR_CODES,
 } from "./lib/workflow";
-
-const stepType = v.union(
-  v.literal("harvest"),
-  v.literal("process"),
-  v.literal("quality_check"),
-  v.literal("transport"),
-  v.literal("receive"),
-  v.literal("retail")
-);
 
 export const createAnchoredStep = internalMutation({
   args: {
@@ -84,7 +76,7 @@ export const createAnchoredStep = internalMutation({
     if (args.type !== nextRequired) {
       throw new ConvexError({
         code: WORKFLOW_ERROR_CODES.INVALID_NEXT_STEP,
-        message: `Step type '${args.type}' cannot be added yet. Expected next: '${nextRequired ?? "none"}'`,
+        message: `Step type '${args.type}' cannot be added yet. Expected next: '${nextRequired}'`,
       });
     }
 

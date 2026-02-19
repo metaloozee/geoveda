@@ -26,6 +26,7 @@
       "dependencies": {
         "@convex-dev/better-auth": "catalog:",
         "@convex-dev/react-query": "^0.1.0",
+        "@geoveda/anchoring": "workspace:*",
         "@geoveda/backend": "workspace:*",
         "@geoveda/env": "workspace:*",
         "@tanstack/react-form": "^1.27.3",
@@ -87,6 +88,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@convex-dev/better-auth": "catalog:",
+        "@geoveda/anchoring": "workspace:*",
         "@geoveda/env": "workspace:*",
         "better-auth": "catalog:",
         "convex": "catalog:",

@@ -20,14 +20,13 @@ import { injected } from "wagmi/connectors";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
-const ETH_ADDRESS_PATTERN = /0x[a-fA-F0-9]{40}/;
+const ETH_ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
 function normalizeWalletAddress(value: string): string {
-  const match = value.match(ETH_ADDRESS_PATTERN);
-  if (!match) {
+  if (!ETH_ADDRESS_PATTERN.test(value)) {
     return value.toLowerCase();
   }
-  return match[0].toLowerCase();
+  return value.toLowerCase();
 }
 
 export function WalletConnectButton() {
@@ -55,6 +54,15 @@ export function WalletConnectButton() {
     connect({ connector: injected() });
   };
 
+  const navigateToDashboard = () => {
+    window.location.assign("/dashboard");
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+    router.refresh();
+  };
+
   const handleSignIn = async () => {
     if (!(address && chainId)) {
       return;
@@ -67,7 +75,6 @@ export function WalletConnectButton() {
 
     setIsSigningIn(true);
     try {
-      // 1. Get nonce from Better Auth
       const nonceResponse = await authClient.siwe.nonce({
         walletAddress: address,
       });
@@ -76,7 +83,6 @@ export function WalletConnectButton() {
       }
       const { nonce } = nonceResponse.data;
 
-      // 2. Create SIWE message
       const message = createSiweMessage({
         address,
         chainId,
@@ -87,10 +93,8 @@ export function WalletConnectButton() {
         statement: "Sign in to GeoVeda (Base Sepolia)",
       });
 
-      // 3. Sign message using Wagmi
       const signature = await signMessageAsync({ message });
 
-      // 4. Verify signature with Better Auth
       const verifyResponse = await authClient.siwe.verify({
         message,
         signature,
@@ -102,7 +106,7 @@ export function WalletConnectButton() {
 
       setIsSigningIn(false);
       toast.success("Signed in with Base Sepolia wallet");
-      router.push("/dashboard");
+      navigateToDashboard();
     } catch {
       setIsSigningIn(false);
       toast.error("Failed to sign in");
@@ -118,7 +122,6 @@ export function WalletConnectButton() {
     }
   };
 
-  // If connected but not signed in
   if (isConnected && !session.data) {
     return (
       <div className="flex gap-2">
@@ -157,7 +160,7 @@ export function WalletConnectButton() {
             </>
           )}
         </Button>
-        <Button onClick={() => disconnect()} variant="ghost">
+        <Button onClick={handleDisconnect} variant="ghost">
           Disconnect
         </Button>
       </div>
@@ -169,10 +172,15 @@ export function WalletConnectButton() {
       <div className="flex items-center gap-2">
         <Button
           onClick={async () => {
-            await authClient.signOut();
-            disconnect();
-            router.refresh();
-            toast.info("Session reset. Reconnect and sign in again.");
+            try {
+              await authClient.signOut();
+              toast.info("Session reset. Reconnect and sign in again.");
+            } catch {
+              toast.error("Failed to reset session");
+            } finally {
+              disconnect();
+              window.location.assign("/connect");
+            }
           }}
           variant="destructive"
         >
@@ -182,7 +190,6 @@ export function WalletConnectButton() {
     );
   }
 
-  // If not connected
   if (!isConnected) {
     return (
       <Button
