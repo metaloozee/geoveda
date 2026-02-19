@@ -1,5 +1,13 @@
-import { STEP_VALUES } from "@geoveda/anchoring";
 import { v } from "convex/values";
+
+const STEP_VALUES = [
+  "harvest",
+  "process",
+  "quality_check",
+  "transport",
+  "receive",
+  "retail",
+] as const;
 
 export type StepType = (typeof STEP_VALUES)[number];
 
