@@ -23,6 +23,23 @@ interface IdentityLike {
   walletAddress?: string;
 }
 
+const ETH_ADDRESS_PATTERN = /0x[a-fA-F0-9]{40}/;
+
+function normalizeWalletAddress(
+  value: string | null | undefined
+): string | null {
+  if (!(value && typeof value === "string")) {
+    return null;
+  }
+
+  const match = value.match(ETH_ADDRESS_PATTERN);
+  if (!match) {
+    return null;
+  }
+
+  return match[0].toLowerCase();
+}
+
 function isAllowIdentityWalletFallbackInTests(): boolean {
   return process.env.CONVEX_TEST_USE_IDENTITY_WALLET === "true";
 }
@@ -39,7 +56,13 @@ function getWalletAddressFromIdentity(
 ): string | null {
   const walletAddress = identity?.walletAddress;
   if (walletAddress && typeof walletAddress === "string") {
-    return walletAddress;
+    const normalizedWalletAddress = normalizeWalletAddress(walletAddress);
+    if (normalizedWalletAddress) {
+      return normalizedWalletAddress;
+    }
+    if (isAllowIdentityWalletFallbackInTests()) {
+      return walletAddress.toLowerCase();
+    }
   }
 
   if (!isAllowIdentityWalletFallbackInTests()) {
@@ -51,7 +74,12 @@ function getWalletAddressFromIdentity(
     return null;
   }
 
-  return fallbackWalletAddress;
+  // Tests use lightweight wallet-like identifiers (e.g. "0xseedadmin")
+  // that are not strict 40-hex Ethereum addresses.
+  return (
+    normalizeWalletAddress(fallbackWalletAddress) ??
+    fallbackWalletAddress.toLowerCase()
+  );
 }
 
 export async function getAuthUser(
@@ -116,7 +144,7 @@ async function extractWalletAddress(
     return null;
   }
 
-  return (account as { accountId?: string }).accountId ?? null;
+  return normalizeWalletAddress((account as { accountId?: string }).accountId);
 }
 
 export async function requireAuth(
@@ -137,9 +165,12 @@ export async function getAppUser(
   ctx: QueryCtx | MutationCtx,
   walletAddress: string
 ): Promise<Doc<"users"> | null> {
+  const normalized =
+    normalizeWalletAddress(walletAddress) ?? walletAddress.toLowerCase();
+
   return await ctx.db
     .query("users")
-    .withIndex("by_walletAddress", (q) => q.eq("walletAddress", walletAddress))
+    .withIndex("by_walletAddress", (q) => q.eq("walletAddress", normalized))
     .unique();
 }
 
@@ -204,5 +235,5 @@ export async function requireAuthWithWallet(
     });
   }
 
-  return { authUser, walletAddress };
+  return { authUser, walletAddress: walletAddress.toLowerCase() };
 }

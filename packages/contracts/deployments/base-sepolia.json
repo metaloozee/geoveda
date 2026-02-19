@@ -1,0 +1,10 @@
+{
+  "chainId": 84532,
+  "network": "base-sepolia",
+  "contractName": "AnchorRegistry",
+  "contractAddress": "0x6D913FF543580081D37BE932397A916b10EFb660",
+  "deploymentTxHash": "0xf0502e4a8f6fc0589c2806d057a4abe26cceb309582f954eb7ac8f6e337d76ce",
+  "deploymentBlockNumber": 37834370,
+  "verifiedUrl": "https://sepolia.basescan.org/address/0x6D913FF543580081D37BE932397A916b10EFb660#code",
+  "deployedAt": "2026-02-18T00:00:00.000Z"
+}

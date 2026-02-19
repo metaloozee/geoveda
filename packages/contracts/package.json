@@ -1,0 +1,17 @@
+{
+  "name": "@geoveda/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun ./scripts/forge-task.mjs build build",
+    "test": "bun ./scripts/forge-task.mjs test test -vv",
+    "fmt": "bun ./scripts/forge-task.mjs fmt fmt",
+    "fmt:check": "bun ./scripts/forge-task.mjs fmt:check fmt --check",
+    "deploy:base-sepolia": "forge script script/DeployAnchorRegistry.s.sol:DeployAnchorRegistry --rpc-url \"$BASE_SEPOLIA_RPC_URL\" --broadcast --verify",
+    "verify:base-sepolia": "forge verify-contract \"$ANCHOR_REGISTRY_CONTRACT_ADDRESS\" src/AnchorRegistry.sol:AnchorRegistry --chain-id 84532 --watch --etherscan-api-key \"$BASESCAN_API_KEY\" --rpc-url \"$BASE_SEPOLIA_RPC_URL\""
+  },
+  "devDependencies": {
+    "@geoveda/config": "workspace:*"
+  }
+}

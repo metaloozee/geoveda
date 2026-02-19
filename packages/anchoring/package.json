@@ -1,0 +1,17 @@
+{
+  "name": "@geoveda/anchoring",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./abi": "./src/abi/anchor-registry-abi.ts"
+  },
+  "dependencies": {
+    "viem": "^2.45.1"
+  },
+  "devDependencies": {
+    "@geoveda/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

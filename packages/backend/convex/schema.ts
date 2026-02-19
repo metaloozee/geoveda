@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { anchorStatus, stepType } from "./lib/validators";
 
 const userRole = v.union(
   v.literal("farmer"),
@@ -14,15 +15,6 @@ const lotStatus = v.union(
   v.literal("created"),
   v.literal("in_progress"),
   v.literal("complete")
-);
-
-const stepType = v.union(
-  v.literal("harvest"),
-  v.literal("process"),
-  v.literal("quality_check"),
-  v.literal("transport"),
-  v.literal("receive"),
-  v.literal("retail")
 );
 
 export default defineSchema({
@@ -52,6 +44,7 @@ export default defineSchema({
     title: v.string(),
     description: v.optional(v.string()),
     actorId: v.id("users"),
+    actorWalletAddress: v.optional(v.string()),
     actorRole: v.string(),
     timestamp: v.number(),
   })
@@ -61,9 +54,19 @@ export default defineSchema({
   anchors: defineTable({
     stepId: v.id("steps"),
     lotId: v.id("lots"),
+    status: anchorStatus,
     txHash: v.string(),
     dataHash: v.string(),
+    stepKey: v.string(),
     chainId: v.number(),
+    blockNumber: v.number(),
+    contractAddress: v.string(),
+    eventName: v.string(),
+    txSender: v.string(),
+    verifiedAt: v.optional(v.number()),
+    verificationError: v.optional(v.string()),
     anchoredAt: v.number(),
-  }).index("by_stepId", ["stepId"]),
+  })
+    .index("by_stepId", ["stepId"])
+    .index("by_lotId", ["lotId"]),
 });

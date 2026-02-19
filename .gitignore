@@ -48,3 +48,9 @@ coverage
 .cache
 tmp
 temp
+
+# Foundry (contracts)
+packages/contracts/cache
+packages/contracts/out
+packages/contracts/broadcast
+packages/contracts/foundry.lock
