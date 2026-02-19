@@ -47,10 +47,25 @@ interface AddStepFormProps {
   lotStatus: string;
 }
 
+interface PendingAnchorSubmission {
+  lotId: Id<"lots">;
+  type: StepType;
+  title: string;
+  description?: string;
+  actorWalletAddress: string;
+  timestamp: number;
+  stepKey: `0x${string}`;
+  dataHash: `0x${string}`;
+  txHash?: `0x${string}`;
+  chainId: number;
+  contractAddress: `0x${string}`;
+}
+
 const formatStepAction = (step: string) =>
   step.replace(/_/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
 const ETH_ADDRESS_PATTERN = /0x[a-fA-F0-9]{40}/;
 const TX_RECEIPT_TIMEOUT_MS = 90_000;
+const PENDING_ANCHOR_STORAGE_KEY = "geoveda.pendingAnchorSubmission";
 
 const anchorStepAbi = [
   {
@@ -129,6 +144,70 @@ function getAddStepErrorMessage(err: unknown): string {
   return "Failed to add step.";
 }
 
+function getPendingAnchorSubmission(): PendingAnchorSubmission | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(PENDING_ANCHOR_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as PendingAnchorSubmission;
+  } catch {
+    window.localStorage.removeItem(PENDING_ANCHOR_STORAGE_KEY);
+    return null;
+  }
+}
+
+function setPendingAnchorSubmission(record: PendingAnchorSubmission): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    PENDING_ANCHOR_STORAGE_KEY,
+    JSON.stringify(record)
+  );
+}
+
+function clearPendingAnchorSubmission(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(PENDING_ANCHOR_STORAGE_KEY);
+}
+
+function canReusePendingAnchorSubmission(
+  record: PendingAnchorSubmission,
+  params: {
+    lotId: Id<"lots">;
+    type: StepType;
+    title: string;
+    description?: string;
+    actorWalletAddress: string;
+    chainId: number;
+    contractAddress: `0x${string}`;
+  }
+): boolean {
+  const normalizedRecordDescription = record.description ?? "";
+  const normalizedRequestDescription = params.description ?? "";
+
+  return (
+    record.lotId === params.lotId &&
+    record.type === params.type &&
+    record.title === params.title &&
+    normalizedRecordDescription === normalizedRequestDescription &&
+    record.actorWalletAddress === params.actorWalletAddress &&
+    record.chainId === params.chainId &&
+    record.contractAddress.toLowerCase() ===
+      params.contractAddress.toLowerCase()
+  );
+}
+
 export function AddStepForm({ lotId, steps, lotStatus }: AddStepFormProps) {
   const convex = useConvex();
   const { address, chainId } = useAccount();
@@ -170,56 +249,100 @@ export function AddStepForm({ lotId, steps, lotStatus }: AddStepFormProps) {
         throw new Error("Anchor registry contract is not configured");
       }
 
-      const timestamp = Date.now();
-      const stepKey = makeStepIntentKey({
-        lotId,
-        type,
-        actorWalletAddress: sessionWallet,
-        timestamp,
-      });
-      const dataHash = hashAnchorPayload({
-        version: "1",
-        stepId: stepKey,
-        lotId,
-        type,
-        title,
-        description,
-        actorId: user._id,
-        actorWalletAddress: sessionWallet,
-        actorRole: user.role,
-        timestamp,
-      });
+      const pendingSubmission = getPendingAnchorSubmission();
+      let anchorSubmission: PendingAnchorSubmission;
 
-      let txHash: `0x${string}`;
-      try {
-        txHash = await walletClient.writeContract({
-          abi: anchorStepAbi,
-          address: contractAddress,
-          functionName: "anchorStep",
-          args: [dataHash, stepKey],
-          account: sessionWallet as `0x${string}`,
-          chain: walletClient.chain,
+      if (
+        pendingSubmission &&
+        canReusePendingAnchorSubmission(pendingSubmission, {
+          lotId,
+          type,
+          title,
+          description,
+          actorWalletAddress: sessionWallet,
+          chainId: BASE_SEPOLIA_CHAIN_ID,
+          contractAddress,
+        })
+      ) {
+        anchorSubmission = pendingSubmission;
+      } else {
+        const timestamp = Date.now();
+        const stepKey = makeStepIntentKey({
+          lotId,
+          type,
+          actorWalletAddress: sessionWallet,
+          timestamp,
         });
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message.toLowerCase() : "";
-        const shouldRetryLegacy =
-          errorMessage.includes("reverted") ||
-          errorMessage.includes("selector") ||
-          errorMessage.includes("function");
+        const dataHash = hashAnchorPayload({
+          version: "1",
+          stepId: stepKey,
+          lotId,
+          type,
+          title,
+          description,
+          actorId: user._id,
+          actorWalletAddress: sessionWallet,
+          actorRole: user.role,
+          timestamp,
+        });
 
-        if (!shouldRetryLegacy) {
-          throw error;
+        anchorSubmission = {
+          lotId,
+          type,
+          title,
+          description,
+          actorWalletAddress: sessionWallet,
+          timestamp,
+          stepKey,
+          dataHash,
+          chainId: BASE_SEPOLIA_CHAIN_ID,
+          contractAddress,
+        };
+        setPendingAnchorSubmission(anchorSubmission);
+      }
+
+      let txHash = anchorSubmission.txHash;
+      if (!txHash) {
+        try {
+          txHash = await walletClient.writeContract({
+            abi: anchorStepAbi,
+            address: contractAddress,
+            functionName: "anchorStep",
+            args: [anchorSubmission.dataHash, anchorSubmission.stepKey],
+            account: sessionWallet as `0x${string}`,
+            chain: walletClient.chain,
+          });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message.toLowerCase() : "";
+          const shouldRetryLegacy =
+            errorMessage.includes("reverted") ||
+            errorMessage.includes("selector") ||
+            errorMessage.includes("function");
+
+          if (!shouldRetryLegacy) {
+            throw error;
+          }
+
+          txHash = await walletClient.writeContract({
+            abi: legacyAnchorStepAbi,
+            address: contractAddress,
+            functionName: "anchorStep",
+            args: [
+              anchorSubmission.dataHash,
+              anchorSubmission.stepKey,
+              sessionWallet as `0x${string}`,
+            ],
+            account: sessionWallet as `0x${string}`,
+            chain: walletClient.chain,
+          });
         }
 
-        txHash = await walletClient.writeContract({
-          abi: legacyAnchorStepAbi,
-          address: contractAddress,
-          functionName: "anchorStep",
-          args: [dataHash, stepKey, sessionWallet as `0x${string}`],
-          account: sessionWallet as `0x${string}`,
-          chain: walletClient.chain,
-        });
+        anchorSubmission = {
+          ...anchorSubmission,
+          txHash,
+        };
+        setPendingAnchorSubmission(anchorSubmission);
       }
 
       try {
@@ -239,18 +362,31 @@ export function AddStepForm({ lotId, steps, lotStatus }: AddStepFormProps) {
         throw new Error("Failed to confirm transaction on Base Sepolia.");
       }
 
-      return await convex.action(api.anchorsActions.verifyAnchorAndCreateStep, {
-        lotId,
-        type,
-        title,
-        description,
-        timestamp,
-        txHash,
-        dataHash,
-        stepKey,
-        chainId: BASE_SEPOLIA_CHAIN_ID,
-        contractAddress,
-      });
+      try {
+        const stepId = await convex.action(
+          api.anchorsActions.verifyAnchorAndCreateStep,
+          {
+            lotId,
+            type,
+            title,
+            description,
+            timestamp: anchorSubmission.timestamp,
+            txHash,
+            dataHash: anchorSubmission.dataHash,
+            stepKey: anchorSubmission.stepKey,
+            chainId: BASE_SEPOLIA_CHAIN_ID,
+            contractAddress,
+          }
+        );
+        clearPendingAnchorSubmission();
+        return stepId;
+      } catch (error) {
+        setPendingAnchorSubmission({
+          ...anchorSubmission,
+          txHash,
+        });
+        throw error;
+      }
     },
   });
 

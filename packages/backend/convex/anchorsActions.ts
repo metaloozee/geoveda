@@ -28,6 +28,7 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
     contractAddress: v.string(),
   },
   returns: v.id("steps"),
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: action performs sequential auth, chain verification, and idempotency checks
   handler: async (ctx, args): Promise<Id<"steps">> => {
     const appUser = await ctx.runQuery(api.users.getCurrent, {});
     if (!appUser) {
@@ -35,6 +36,30 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
         code: "UNAUTHENTICATED",
         message: "Authentication required",
       });
+    }
+
+    const normalizedTxHash = args.txHash.toLowerCase();
+    const normalizedDataHash = args.dataHash.toLowerCase();
+    const normalizedStepKey = args.stepKey.toLowerCase();
+
+    const existingAnchor = await ctx.runQuery(
+      internal.anchorsInternal.findByLotAndTxHash,
+      {
+        lotId: args.lotId,
+        txHash: normalizedTxHash,
+      }
+    );
+
+    if (existingAnchor) {
+      const existingDataHash = existingAnchor.dataHash.toLowerCase();
+      const existingStepKey = existingAnchor.stepKey.toLowerCase();
+
+      if (
+        existingDataHash === normalizedDataHash &&
+        existingStepKey === normalizedStepKey
+      ) {
+        return existingAnchor.stepId;
+      }
     }
 
     const actorWalletAddress = appUser.walletAddress.toLowerCase();
@@ -75,14 +100,14 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
       timestamp: args.timestamp,
     });
 
-    if (args.stepKey.toLowerCase() !== expectedStepKey.toLowerCase()) {
+    if (normalizedStepKey !== expectedStepKey.toLowerCase()) {
       throw new ConvexError({
         code: "ANCHOR_MISMATCH",
         message: "Step key mismatch",
       });
     }
 
-    if (args.dataHash.toLowerCase() !== expectedDataHash.toLowerCase()) {
+    if (normalizedDataHash !== expectedDataHash.toLowerCase()) {
       throw new ConvexError({
         code: "ANCHOR_MISMATCH",
         message: "Data hash mismatch",
@@ -104,9 +129,25 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
         transport: http(env.BASE_SEPOLIA_RPC_URL),
       });
 
-      const receipt = await client.getTransactionReceipt({
-        hash: args.txHash as `0x${string}`,
-      });
+      let receipt: Awaited<ReturnType<typeof client.getTransactionReceipt>>;
+      try {
+        receipt = await client.getTransactionReceipt({
+          hash: args.txHash as `0x${string}`,
+        });
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new ConvexError({
+          code: "ANCHOR_RECEIPT_FETCH_FAILED",
+          message: `Failed to fetch transaction receipt for ${args.txHash}: ${reason}`,
+        });
+      }
+
+      if (!receipt) {
+        throw new ConvexError({
+          code: "ANCHOR_RECEIPT_NOT_FOUND",
+          message: `Transaction receipt not found for ${args.txHash}`,
+        });
+      }
 
       const matchingLog = receipt.logs.find((log) => {
         if (
@@ -128,9 +169,8 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
 
           return (
             String(decoded.args.dataHash).toLowerCase() ===
-              args.dataHash.toLowerCase() &&
-            String(decoded.args.stepKey).toLowerCase() ===
-              args.stepKey.toLowerCase() &&
+              normalizedDataHash &&
+            String(decoded.args.stepKey).toLowerCase() === normalizedStepKey &&
             String(decoded.args.actor).toLowerCase() === actorWalletAddress
           );
         } catch {
@@ -164,9 +204,9 @@ export const verifyAnchorAndCreateStep: ReturnType<typeof action> = action({
       actorId: appUser._id,
       actorWalletAddress,
       timestamp: args.timestamp,
-      txHash: args.txHash.toLowerCase(),
-      dataHash: args.dataHash.toLowerCase(),
-      stepKey: args.stepKey.toLowerCase(),
+      txHash: normalizedTxHash,
+      dataHash: normalizedDataHash,
+      stepKey: normalizedStepKey,
       chainId: args.chainId,
       blockNumber,
       contractAddress: configuredContractAddress,

@@ -1,6 +1,6 @@
 import { ANCHOR_EVENT_NAME } from "@geoveda/anchoring";
 import { ConvexError, v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { stepType } from "./lib/validators";
 import {
   canAccessLot,
@@ -130,5 +130,43 @@ export const createAnchoredStep = internalMutation({
     });
 
     return stepId;
+  },
+});
+
+export const findByLotAndTxHash = internalQuery({
+  args: {
+    lotId: v.id("lots"),
+    txHash: v.string(),
+  },
+  returns: v.union(
+    v.object({
+      stepId: v.id("steps"),
+      txHash: v.string(),
+      dataHash: v.string(),
+      stepKey: v.string(),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const normalizedTxHash = args.txHash.toLowerCase();
+    const anchors = await ctx.db
+      .query("anchors")
+      .withIndex("by_lotId", (q) => q.eq("lotId", args.lotId))
+      .collect();
+
+    const existingAnchor = anchors.find(
+      (anchor) => anchor.txHash.toLowerCase() === normalizedTxHash
+    );
+
+    if (!existingAnchor) {
+      return null;
+    }
+
+    return {
+      stepId: existingAnchor.stepId,
+      txHash: existingAnchor.txHash,
+      dataHash: existingAnchor.dataHash,
+      stepKey: existingAnchor.stepKey,
+    };
   },
 });

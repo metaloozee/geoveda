@@ -69,33 +69,36 @@ export const listByLot = query({
       });
     }
 
-    const stepsWithAnchors = await Promise.all(
-      lotSteps.map(async (step) => {
-        const anchor = await ctx.db
-          .query("anchors")
-          .withIndex("by_stepId", (q) => q.eq("stepId", step._id))
-          .unique();
-
-        return {
-          ...step,
-          anchor: anchor
-            ? {
-                _id: anchor._id,
-                status: anchor.status,
-                txHash: anchor.txHash,
-                dataHash: anchor.dataHash,
-                chainId: anchor.chainId,
-                blockNumber: anchor.blockNumber,
-                contractAddress: anchor.contractAddress,
-                eventName: anchor.eventName,
-                verifiedAt: anchor.verifiedAt,
-                verificationError: anchor.verificationError,
-                anchoredAt: anchor.anchoredAt,
-              }
-            : null,
-        };
-      })
+    const anchors = await ctx.db
+      .query("anchors")
+      .withIndex("by_lotId", (q) => q.eq("lotId", args.lotId))
+      .collect();
+    const anchorByStepId = new Map(
+      anchors.map((anchor) => [anchor.stepId, anchor])
     );
+
+    const stepsWithAnchors = lotSteps.map((step) => {
+      const anchor = anchorByStepId.get(step._id);
+
+      return {
+        ...step,
+        anchor: anchor
+          ? {
+              _id: anchor._id,
+              status: anchor.status,
+              txHash: anchor.txHash,
+              dataHash: anchor.dataHash,
+              chainId: anchor.chainId,
+              blockNumber: anchor.blockNumber,
+              contractAddress: anchor.contractAddress,
+              eventName: anchor.eventName,
+              verifiedAt: anchor.verifiedAt,
+              verificationError: anchor.verificationError,
+              anchoredAt: anchor.anchoredAt,
+            }
+          : null,
+      };
+    });
 
     return stepsWithAnchors;
   },
