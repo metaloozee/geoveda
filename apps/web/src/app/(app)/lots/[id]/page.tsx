@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { buildTraceUrl } from "@/lib/trace-url";
 
 export default function LotDetailPage() {
   const params = useParams<{ id: string }>();
@@ -116,7 +117,7 @@ function LotDetailContent({ lotId }: { lotId: Id<"lots"> }) {
             bgColor="transparent"
             fgColor="currentColor"
             size={120}
-            value={lot.lotNumber}
+            value={buildTraceUrl(lot.lotNumber)}
           />
         </Card>
       </div>

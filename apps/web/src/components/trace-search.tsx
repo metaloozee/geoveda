@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { resolveScanNavigationTarget } from "@/lib/trace-url";
 
 export function TraceSearch() {
   const [lotNumber, setLotNumber] = useState("");
@@ -20,13 +21,27 @@ export function TraceSearch() {
   };
 
   const handleScan = (detectedCodes: { rawValue?: string }[]) => {
-    if (detectedCodes.length > 0) {
-      const rawValue = detectedCodes[0].rawValue;
-      if (rawValue) {
-        setShowScanner(false);
-        router.push(`/trace/${encodeURIComponent(rawValue)}`);
-      }
+    if (detectedCodes.length === 0) {
+      return;
     }
+
+    const rawValue = detectedCodes[0].rawValue?.trim();
+    if (!rawValue) {
+      return;
+    }
+
+    setShowScanner(false);
+    const target = resolveScanNavigationTarget(
+      rawValue,
+      window.location.origin
+    );
+
+    if (target.type === "internal") {
+      router.push(target.href as never);
+      return;
+    }
+
+    window.location.assign(target.href);
   };
 
   return (
